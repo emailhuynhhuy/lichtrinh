@@ -986,6 +986,13 @@
         async function createEvent(e) {
             e.preventDefault();
             
+            // Check if user is still authenticated
+            if (!gapi.client.getToken()) {
+                showAlert('⚠️ Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.', 'error');
+                handleSignoutClick();
+                return;
+            }
+            
             const name = document.getElementById('eventName').value;
             const date = document.getElementById('eventDate').value;
             const time = document.getElementById('eventTime').value;
@@ -994,6 +1001,12 @@
             const notes = document.getElementById('eventNotes').value;
             const reminderMinutes = parseInt(document.getElementById('reminderTime').value);
             const createTaskChecked = document.getElementById('createTask').checked;
+
+            // Validate required fields
+            if (!name || !date || !time || !location) {
+                showAlert('⚠️ Vui lòng điền đầy đủ các trường bắt buộc (Tên, Ngày, Giờ, Địa điểm)', 'error');
+                return;
+            }
 
             // Create datetime
             const startDateTime = new Date(`${date}T${time}`);
@@ -1040,7 +1053,14 @@
                 
             } catch (err) {
                 console.error('Error creating event:', err);
-                showAlert('Lỗi tạo sự kiện: ' + err.message, 'error');
+                
+                // Check if it's an auth error
+                if (err.status === 401 || err.status === 403) {
+                    showAlert('⚠️ Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.', 'error');
+                    handleSignoutClick();
+                } else {
+                    showAlert('❌ Lỗi tạo sự kiện: ' + err.message, 'error');
+                }
             }
         }
 
@@ -1219,12 +1239,16 @@
                     
                     if (event.location !== nextEvent.location) {
                         travelInfo = `
-                            <div style="margin-top: 8px; padding: 8px; background: rgba(255, 210, 63, 0.1); border-left: 3px solid var(--accent); border-radius: 4px;">
-                                <strong>⏱️ Thời gian đến địa điểm kế tiếp:</strong> ${Math.floor(timeDiff)} phút<br>
-                                <strong>📍 Đến:</strong> ${nextEvent.location}<br>
-                                <span style="color: var(--text-secondary); font-size: 0.9em;">
+                            <div style="margin-top: 8px; padding: 12px; background: rgba(255, 210, 63, 0.15); border-left: 3px solid var(--accent); border-radius: 4px;">
+                                <div style="color: #FFFFFF; font-weight: 600; margin-bottom: 6px;">
+                                    ⏱️ Thời gian đến địa điểm kế tiếp: <span style="color: var(--accent);">${Math.floor(timeDiff)} phút</span>
+                                </div>
+                                <div style="color: #E0E0E0; margin-bottom: 6px;">
+                                    📍 Đến: <strong style="color: #FFFFFF;">${nextEvent.location}</strong>
+                                </div>
+                                <div style="color: var(--accent); font-size: 0.9em; font-style: italic;">
                                     💡 Kiểm tra thời gian di chuyển thực tế trên Google Maps
-                                </span>
+                                </div>
                             </div>
                         `;
                     }
