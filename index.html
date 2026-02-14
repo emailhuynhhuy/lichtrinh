@@ -218,11 +218,93 @@
             border-bottom: 2px solid rgba(255, 255, 255, 0.1);
         }
 
-        .card-title {
+        css
+            .card-title {
             font-size: 1.5rem;
             font-weight: 700;
             color: var(--primary);
         }
+
+    /* Section title styles */
+    .section-title {
+    font-size: 1.3rem;
+    font-weight: 700;
+    color: var(--accent);
+    margin: 30px 0 15px 0;
+    padding: 15px;
+    background: linear-gradient(135deg, rgba(255, 107, 53, 0.1) 0%, rgba(255, 210, 63, 0.1) 100%);
+    border-left: 4px solid var(--primary);
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.section-icon {
+    font-size: 1.5rem;
+}
+
+/* Location card improvements */
+.location-card {
+    background: var(--card-bg);
+    border-radius: 15px;
+    padding: 20px;
+    margin-bottom: 15px;
+    border-left: 4px solid var(--accent);
+    transition: all 0.3s ease;
+}
+
+.location-card:hover {
+    background: var(--card-hover);
+    transform: translateX(5px);
+    box-shadow: 0 5px 20px rgba(255, 210, 63, 0.2);
+}
+
+.location-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+}
+
+.location-title {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.travel-time-badge {
+    background: linear-gradient(135deg, var(--warning) 0%, var(--accent) 100%);
+    color: var(--bg-dark);
+    padding: 6px 15px;
+    border-radius: 20px;
+    font-size: 0.9rem;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    box-shadow: 0 3px 10px rgba(246, 173, 85, 0.3);
+}
+
+.location-details {
+    display: grid;
+    gap: 8px;
+    color: var(--text-secondary);
+    font-size: 0.95rem;
+}
+
+.location-detail-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.no-events-message {
+    text-align: center;
+    padding: 40px 20px;
+    color: var(--text-secondary);
+    font-size: 1.1rem;
+}
 
         /* Form Elements */
         .form-group {
@@ -663,25 +745,15 @@
                     <div id="upcomingEvents"></div>
                 </div>
 
-                <div class="card">
-                    <h2 class="card-title">📍 Quản lý địa điểm & Di chuyển</h2>
-                    <div class="alert alert-info">
-                        <strong>💡 Gợi ý:</strong> Để biết thời gian di chuyển chính xác giữa các địa điểm, 
-                        hãy sử dụng <strong>Google Maps</strong> trên điện thoại của bạn:
-                        <ul style="margin-left: 20px; margin-top: 10px;">
-                            <li>Mở <strong>Google Maps app</strong></li>
-                            <li>Nhập địa điểm đến và chọn phương tiện (xe máy/ô tô/xe buýt)</li>
-                            <li>Google Maps sẽ tính toán thời gian dựa trên tình hình giao thông thực tế</li>
-                            <li>Thêm thời gian dự kiến vào trường "Thời gian chuẩn bị" khi tạo sự kiện</li>
-                        </ul>
-                    </div>
-                    
-                    <div id="locationsList" style="margin-top: 20px;">
-                        <h3 style="color: var(--text-secondary); margin-bottom: 15px;">📌 Địa điểm trong tuần này</h3>
-                        <div id="weekLocations"></div>
-                    </div>
-                </div>
-            </div>
+                <!-- Location Management Section -->
+               <div class="card">
+    <div class="section-title">
+        <span class="section-icon">🗺️</span>
+        <span>Quản lý địa điểm & Di chuyển</span>
+    </div>
+    
+    <div id="weekLocations"></div>
+</div>
 
             <!-- Calendar Tab -->
             <div id="calendar" class="tab-content">
@@ -987,11 +1059,15 @@
             e.preventDefault();
             
             // Check if user is still authenticated
-            if (!gapi.client.getToken()) {
-                showAlert('⚠️ Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.', 'error');
-                handleSignoutClick();
-                return;
-            }
+            const currentToken = gapi.client.getToken();
+            if (!currentToken || !currentToken.access_token) {
+            showAlert('⚠️ Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.', 'error');
+            // Reload page to go back to auth screen
+            setTimeout(() => {
+            document.getElementById('authSection').style.display = 'block';
+            document.getElementById('mainContent').style.display = 'none';
+            }, 2000);
+            return;
             
             const name = document.getElementById('eventName').value;
             const date = document.getElementById('eventDate').value;
@@ -1056,11 +1132,14 @@
                 
                 // Check if it's an auth error
                 if (err.status === 401 || err.status === 403) {
-                    showAlert('⚠️ Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.', 'error');
-                    handleSignoutClick();
-                } else {
-                    showAlert('❌ Lỗi tạo sự kiện: ' + err.message, 'error');
-                }
+                showAlert('⚠️ Phiên đăng nhập đã hết hạn. Đang đăng nhập lại...', 'error');
+                // Re-authenticate instead of logout
+                setTimeout(() => {
+                handleAuthClick();
+                }, 1500);
+} else {
+    showAlert('❌ Lỗi tạo sự kiện: ' + err.message, 'error');
+}
             }
         }
 
@@ -1191,27 +1270,88 @@
         // LOCATION MANAGEMENT
         // ============================================
         function updateWeekLocations(events) {
-            const container = document.getElementById('weekLocations');
-            if (!container) return;
+    const container = document.getElementById('weekLocations');
+    
+    if (!events || events.length === 0) {
+        container.innerHTML = '<div class="no-events-message">💤 Chưa có sự kiện nào trong tuần này</div>';
+        return;
+    }
+
+    // Group events by day
+    const today = new Date();
+    const weekEnd = new Date(today.getTime() + 7 * 24 * 60 * 60 * 1000);
+    
+    const thisWeekEvents = events.filter(event => {
+        const eventDate = new Date(event.start.dateTime || event.start.date);
+        return eventDate >= today && eventDate <= weekEnd;
+    });
+
+    if (thisWeekEvents.length === 0) {
+        container.innerHTML = '<div class="no-events-message">✅ Tuần này không có sự kiện nào</div>';
+        return;
+    }
+
+    // Sort by date
+    thisWeekEvents.sort((a, b) => {
+        const dateA = new Date(a.start.dateTime || a.start.date);
+        const dateB = new Date(b.start.dateTime || b.start.date);
+        return dateA - dateB;
+    });
+
+    let html = '';
+    
+    for (let i = 0; i < thisWeekEvents.length; i++) {
+        const event = thisWeekEvents[i];
+        const start = new Date(event.start.dateTime || event.start.date);
+        
+        // Calculate travel time to next event
+        let travelTimeHTML = '';
+        if (i < thisWeekEvents.length - 1) {
+            const nextEvent = thisWeekEvents[i + 1];
+            const nextStart = new Date(nextEvent.start.dateTime || nextEvent.start.date);
+            const timeDiff = (nextStart - start) / (1000 * 60); // minutes
             
-            // Get this week's events with locations
-            const today = new Date();
-            const weekStart = new Date(today);
-            weekStart.setDate(today.getDate() - today.getDay());
-            weekStart.setHours(0, 0, 0, 0);
-            
-            const weekEnd = new Date(weekStart);
-            weekEnd.setDate(weekStart.getDate() + 7);
-            
-            const weekEvents = events.filter(event => {
-                const eventDate = new Date(event.start.dateTime || event.start.date);
-                return eventDate >= weekStart && eventDate < weekEnd && event.location;
-            });
-            
-            if (weekEvents.length === 0) {
-                container.innerHTML = '<p style="color: var(--text-secondary);">Chưa có sự kiện nào có địa điểm trong tuần này</p>';
-                return;
+            if (timeDiff < 120) { // Less than 2 hours
+                const travelTime = Math.floor(timeDiff / 3); // Estimate: 1/3 of gap time
+                travelTimeHTML = `
+                    <div class="travel-time-badge">
+                        🚗 ~${travelTime} phút đến địa điểm tiếp theo
+                    </div>
+                `;
             }
+        }
+        
+        html += `
+            <div class="location-card">
+                <div class="location-header">
+                    <div class="location-title">
+                        ${event.summary}
+                    </div>
+                    ${travelTimeHTML}
+                </div>
+                
+                <div class="location-details">
+                    <div class="location-detail-item">
+                        <span>📅</span>
+                        <span>${start.toLocaleDateString('vi-VN', { weekday: 'long', day: 'numeric', month: 'long' })}</span>
+                    </div>
+                    <div class="location-detail-item">
+                        <span>⏰</span>
+                        <span>${start.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })}</span>
+                    </div>
+                    ${event.location ? `
+                        <div class="location-detail-item">
+                            <span>📍</span>
+                            <span>${event.location}</span>
+                        </div>
+                    ` : ''}
+                </div>
+            </div>
+        `;
+    }
+    
+    container.innerHTML = html;
+}
             
             // Sort by date
             weekEvents.sort((a, b) => {
