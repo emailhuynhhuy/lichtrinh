@@ -950,6 +950,39 @@
         function maybeEnableButtons() {
             if (gapiInited && gisInited) {
                 document.getElementById('authSection').style.display = 'block';
+                // Check if there's a saved token
+                checkSavedToken();
+            }
+        }
+
+        // Check for saved token on page load
+        async function checkSavedToken() {
+            const savedToken = localStorage.getItem('google_access_token');
+            const tokenExpiry = localStorage.getItem('token_expiry');
+            
+            if (savedToken && tokenExpiry && Date.now() < parseInt(tokenExpiry)) {
+                // Token still valid
+                gapi.client.setToken({
+                    access_token: savedToken
+                });
+                
+                // Update UI
+                document.getElementById('authIndicator').classList.add('connected');
+                document.getElementById('authStatus').textContent = 'Đã kết nối với Google';
+                document.getElementById('signoutBtn').style.display = 'inline-flex';
+                document.getElementById('authSection').style.display = 'none';
+                document.getElementById('mainContent').style.display = 'block';
+                
+                // Load data
+                try {
+                    await syncAllData();
+                } catch (err) {
+                    console.error('Error loading data with saved token:', err);
+                    // Token might be invalid, clear and show login
+                    localStorage.removeItem('google_access_token');
+                    localStorage.removeItem('token_expiry');
+                    handleSignoutClick();
+                }
             }
         }
 
@@ -962,6 +995,15 @@
                     throw (resp);
                 }
                 accessToken = resp.access_token;
+                
+                // Save token to localStorage
+                localStorage.setItem('google_access_token', accessToken);
+                localStorage.setItem('token_expiry', Date.now() + (3600 * 1000)); // 1 hour
+                
+                // Set token for gapi
+                gapi.client.setToken({
+                    access_token: accessToken
+                });
                 
                 // Update UI
                 document.getElementById('authIndicator').classList.add('connected');
@@ -986,6 +1028,10 @@
             if (token !== null) {
                 google.accounts.oauth2.revoke(token.access_token);
                 gapi.client.setToken('');
+                
+                // Remove token from localStorage
+                localStorage.removeItem('google_access_token');
+                localStorage.removeItem('token_expiry');
                 
                 // Update UI
                 document.getElementById('authIndicator').classList.remove('connected');
@@ -1583,10 +1629,22 @@ Trả lời ngắn gọn bằng tiếng Việt, có thể gợi ý tạo sự ki
             });
             
             // Show selected tab
-            document.getElementById(tabName).classList.add('active');
+            const selectedTab = document.getElementById(tabName);
+            if (selectedTab) {
+                selectedTab.classList.add('active');
+            }
             
-            // Add active to clicked nav tab
-            event.target.classList.add('active');
+            // Add active to clicked nav tab - use window.event
+            if (window.event && window.event.target) {
+                window.event.target.classList.add('active');
+            } else {
+                // Fallback: find the button that matches this tab
+                document.querySelectorAll('.nav-tab').forEach(tab => {
+                    if (tab.getAttribute('onclick')?.includes(tabName)) {
+                        tab.classList.add('active');
+                    }
+                });
+            }
         }
 
         function showAlert(message, type) {
