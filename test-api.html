@@ -1,0 +1,805 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>API Tester - Artist Schedule Manager</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 20px;
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        }
+
+        h1 {
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 2.5rem;
+        }
+
+        .subtitle {
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 1.1rem;
+        }
+
+        .test-section {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 20px;
+            border-left: 4px solid #667eea;
+        }
+
+        .test-section h2 {
+            color: #667eea;
+            margin-bottom: 15px;
+            font-size: 1.3rem;
+        }
+
+        button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+            margin-right: 10px;
+            margin-bottom: 10px;
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        button:active {
+            transform: translateY(0);
+        }
+
+        .result {
+            background: #fff;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            padding: 15px;
+            margin-top: 15px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.9rem;
+            max-height: 300px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+        }
+
+        .success {
+            color: #28a745;
+            font-weight: bold;
+        }
+
+        .error {
+            color: #dc3545;
+            font-weight: bold;
+        }
+
+        .status {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 15px;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            margin-bottom: 20px;
+        }
+
+        .status.connected {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .status.disconnected {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        .indicator {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: currentColor;
+            animation: pulse 2s ease-in-out infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .config-section {
+            background: #fff3cd;
+            border: 2px solid #ffc107;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 30px;
+        }
+
+        .config-section h3 {
+            color: #856404;
+            margin-bottom: 15px;
+        }
+
+        .config-section code {
+            background: #fff;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 0.9rem;
+            color: #d63384;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+        }
+
+        th, td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+
+        th {
+            background: #f8f9fa;
+            font-weight: 600;
+            color: #495057;
+        }
+
+        tr:hover {
+            background: #f8f9fa;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🧪 API Tester</h1>
+        <p class="subtitle">Test Google Calendar, Tasks & Maps APIs</p>
+
+        <div class="config-section">
+            <h3>⚙️ Cấu hình hiện tại</h3>
+            <table>
+                <tr>
+                    <th>API</th>
+                    <th>Status</th>
+                    <th>Value</th>
+                </tr>
+                <tr>
+                    <td>Client ID</td>
+                    <td id="clientIdStatus">❌</td>
+                    <td><code id="clientIdValue">Chưa cấu hình</code></td>
+                </tr>
+                <tr>
+                    <td>API Key</td>
+                    <td id="apiKeyStatus">❌</td>
+                    <td><code id="apiKeyValue">Chưa cấu hình</code></td>
+                </tr>
+                <tr>
+                    <td>Gemini Key</td>
+                    <td id="geminiKeyStatus">❌</td>
+                    <td><code id="geminiKeyValue">Chưa cấu hình</code></td>
+                </tr>
+            </table>
+        </div>
+
+        <div id="authStatus" class="status disconnected">
+            <div class="indicator"></div>
+            <span>Chưa đăng nhập</span>
+        </div>
+
+        <!-- Auth Section -->
+        <div class="test-section">
+            <h2>🔐 Authentication</h2>
+            <button onclick="handleAuthClick()">Đăng nhập</button>
+            <button onclick="handleSignoutClick()">Đăng xuất</button>
+            <div id="authResult" class="result" style="display: none;"></div>
+        </div>
+
+        <!-- Calendar API Tests -->
+        <div class="test-section">
+            <h2>📅 Google Calendar API</h2>
+            <button onclick="testListEvents()">1. Lấy danh sách sự kiện</button>
+            <button onclick="testCreateEvent()">2. Tạo sự kiện test</button>
+            <button onclick="testUpdateEvent()">3. Cập nhật sự kiện</button>
+            <button onclick="testDeleteEvent()">4. Xóa sự kiện</button>
+            <div id="calendarResult" class="result" style="display: none;"></div>
+        </div>
+
+        <!-- Tasks API Tests -->
+        <div class="test-section">
+            <h2>✅ Google Tasks API</h2>
+            <button onclick="testListTasks()">1. Lấy danh sách tasks</button>
+            <button onclick="testCreateTask()">2. Tạo task test</button>
+            <button onclick="testCompleteTask()">3. Đánh dấu hoàn thành</button>
+            <button onclick="testDeleteTask()">4. Xóa task</button>
+            <div id="tasksResult" class="result" style="display: none;"></div>
+        </div>
+
+        <!-- Maps API Tests -->
+        <div class="test-section">
+            <h2>🗺️ Google Maps API</h2>
+            <button onclick="testLoadMap()">1. Load bản đồ</button>
+            <button onclick="testGeocoding()">2. Geocoding địa chỉ</button>
+            <button onclick="testPlacesSearch()">3. Tìm địa điểm</button>
+            <div id="mapsResult" class="result" style="display: none;"></div>
+            <div id="mapContainer" style="width: 100%; height: 300px; margin-top: 15px; border-radius: 8px; overflow: hidden; display: none;"></div>
+        </div>
+
+        <!-- Gemini API Tests -->
+        <div class="test-section">
+            <h2>🤖 Gemini AI API</h2>
+            <button onclick="testGeminiChat()">1. Test chat</button>
+            <button onclick="testGeminiEventParsing()">2. Parse sự kiện từ text</button>
+            <div id="geminiResult" class="result" style="display: none;"></div>
+        </div>
+
+        <!-- Integration Tests -->
+        <div class="test-section">
+            <h2>🔄 Integration Tests</h2>
+            <button onclick="testFullWorkflow()">Test toàn bộ workflow</button>
+            <div id="integrationResult" class="result" style="display: none;"></div>
+        </div>
+    </div>
+
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
+    <script src="https://apis.google.com/js/api.js" async defer></script>
+    <script src="https://maps.googleapis.com/maps/api/js?key=YOUR_MAPS_API_KEY&libraries=places"></script>
+
+    <script>
+        // ============================================
+        // CONFIGURATION
+        // ============================================
+        const CONFIG = {
+            CLIENT_ID: 'YOUR_CLIENT_ID.apps.googleusercontent.com',
+            API_KEY: 'YOUR_API_KEY',
+            GEMINI_API_KEY: 'YOUR_GEMINI_API_KEY',
+            GEMINI_API_URL: 'https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent',
+            SCOPES: [
+                'https://www.googleapis.com/auth/calendar',
+                'https://www.googleapis.com/auth/tasks',
+            ].join(' '),
+            DISCOVERY_DOCS: [
+                'https://www.googleapis.com/discovery/v1/apis/calendar/v3/rest',
+                'https://www.googleapis.com/discovery/v1/apis/tasks/v1/rest'
+            ]
+        };
+
+        let tokenClient;
+        let gapiInited = false;
+        let gisInited = false;
+        let testEventId = null;
+        let testTaskId = null;
+        let map = null;
+
+        // Check config on load
+        window.onload = () => {
+            checkConfig();
+            gapiLoaded();
+            gisLoaded();
+        };
+
+        function checkConfig() {
+            // Check Client ID
+            if (CONFIG.CLIENT_ID !== 'YOUR_CLIENT_ID.apps.googleusercontent.com') {
+                document.getElementById('clientIdStatus').textContent = '✅';
+                document.getElementById('clientIdValue').textContent = CONFIG.CLIENT_ID.substring(0, 30) + '...';
+            }
+
+            // Check API Key
+            if (CONFIG.API_KEY !== 'YOUR_API_KEY') {
+                document.getElementById('apiKeyStatus').textContent = '✅';
+                document.getElementById('apiKeyValue').textContent = CONFIG.API_KEY.substring(0, 20) + '...';
+            }
+
+            // Check Gemini Key
+            if (CONFIG.GEMINI_API_KEY !== 'YOUR_GEMINI_API_KEY') {
+                document.getElementById('geminiKeyStatus').textContent = '✅';
+                document.getElementById('geminiKeyValue').textContent = CONFIG.GEMINI_API_KEY.substring(0, 20) + '...';
+            }
+        }
+
+        // ============================================
+        // INITIALIZATION
+        // ============================================
+        function gapiLoaded() {
+            gapi.load('client', initializeGapiClient);
+        }
+
+        async function initializeGapiClient() {
+            await gapi.client.init({
+                apiKey: CONFIG.API_KEY,
+                discoveryDocs: CONFIG.DISCOVERY_DOCS,
+            });
+            gapiInited = true;
+            showResult('authResult', '✅ GAPI Client initialized', 'success');
+        }
+
+        function gisLoaded() {
+            tokenClient = google.accounts.oauth2.initTokenClient({
+                client_id: CONFIG.CLIENT_ID,
+                scope: CONFIG.SCOPES,
+                callback: '',
+            });
+            gisInited = true;
+            showResult('authResult', '✅ GIS initialized', 'success');
+        }
+
+        // ============================================
+        // AUTHENTICATION
+        // ============================================
+        function handleAuthClick() {
+            tokenClient.callback = async (resp) => {
+                if (resp.error !== undefined) {
+                    showResult('authResult', `❌ Error: ${resp.error}`, 'error');
+                    return;
+                }
+                
+                document.getElementById('authStatus').className = 'status connected';
+                document.getElementById('authStatus').innerHTML = '<div class="indicator"></div><span>Đã kết nối ✓</span>';
+                showResult('authResult', `✅ Đăng nhập thành công!\nAccess Token: ${resp.access_token.substring(0, 50)}...`, 'success');
+            };
+
+            if (gapi.client.getToken() === null) {
+                tokenClient.requestAccessToken({prompt: 'consent'});
+            } else {
+                tokenClient.requestAccessToken({prompt: ''});
+            }
+        }
+
+        function handleSignoutClick() {
+            const token = gapi.client.getToken();
+            if (token !== null) {
+                google.accounts.oauth2.revoke(token.access_token);
+                gapi.client.setToken('');
+                document.getElementById('authStatus').className = 'status disconnected';
+                document.getElementById('authStatus').innerHTML = '<div class="indicator"></div><span>Chưa đăng nhập</span>';
+                showResult('authResult', '✅ Đã đăng xuất', 'success');
+            }
+        }
+
+        // ============================================
+        // CALENDAR API TESTS
+        // ============================================
+        async function testListEvents() {
+            try {
+                const response = await gapi.client.calendar.events.list({
+                    'calendarId': 'primary',
+                    'timeMin': new Date().toISOString(),
+                    'showDeleted': false,
+                    'singleEvents': true,
+                    'maxResults': 10,
+                    'orderBy': 'startTime'
+                });
+
+                const events = response.result.items;
+                let result = `✅ Tìm thấy ${events.length} sự kiện:\n\n`;
+                
+                events.forEach((event, index) => {
+                    const start = event.start.dateTime || event.start.date;
+                    result += `${index + 1}. ${event.summary}\n`;
+                    result += `   📅 ${new Date(start).toLocaleString('vi-VN')}\n`;
+                    result += `   📍 ${event.location || 'Không có địa điểm'}\n\n`;
+                });
+
+                showResult('calendarResult', result, 'success');
+            } catch (err) {
+                showResult('calendarResult', `❌ Lỗi: ${err.message}`, 'error');
+            }
+        }
+
+        async function testCreateEvent() {
+            try {
+                const now = new Date();
+                const tomorrow = new Date(now.getTime() + 24 * 60 * 60 * 1000);
+                
+                const event = {
+                    'summary': '🧪 Test Event from API Tester',
+                    'location': 'Nhà hát Thành phố, Hồ Chí Minh',
+                    'description': 'Đây là sự kiện test từ API Tester',
+                    'start': {
+                        'dateTime': tomorrow.toISOString(),
+                        'timeZone': 'Asia/Ho_Chi_Minh'
+                    },
+                    'end': {
+                        'dateTime': new Date(tomorrow.getTime() + 60 * 60 * 1000).toISOString(),
+                        'timeZone': 'Asia/Ho_Chi_Minh'
+                    },
+                    'reminders': {
+                        'useDefault': false,
+                        'overrides': [
+                            {'method': 'popup', 'minutes': 30}
+                        ]
+                    }
+                };
+
+                const request = await gapi.client.calendar.events.insert({
+                    'calendarId': 'primary',
+                    'resource': event
+                });
+
+                testEventId = request.result.id;
+                showResult('calendarResult', 
+                    `✅ Đã tạo sự kiện!\n\nEvent ID: ${testEventId}\nTên: ${event.summary}\nThời gian: ${new Date(tomorrow).toLocaleString('vi-VN')}`, 
+                    'success'
+                );
+            } catch (err) {
+                showResult('calendarResult', `❌ Lỗi: ${err.message}`, 'error');
+            }
+        }
+
+        async function testUpdateEvent() {
+            if (!testEventId) {
+                showResult('calendarResult', '❌ Vui lòng tạo event test trước!', 'error');
+                return;
+            }
+
+            try {
+                const response = await gapi.client.calendar.events.patch({
+                    'calendarId': 'primary',
+                    'eventId': testEventId,
+                    'resource': {
+                        'summary': '🧪 Test Event (UPDATED)',
+                        'description': 'Đã được cập nhật lúc ' + new Date().toLocaleString('vi-VN')
+                    }
+                });
+
+                showResult('calendarResult', `✅ Đã cập nhật sự kiện!\n\n${JSON.stringify(response.result, null, 2)}`, 'success');
+            } catch (err) {
+                showResult('calendarResult', `❌ Lỗi: ${err.message}`, 'error');
+            }
+        }
+
+        async function testDeleteEvent() {
+            if (!testEventId) {
+                showResult('calendarResult', '❌ Vui lòng tạo event test trước!', 'error');
+                return;
+            }
+
+            try {
+                await gapi.client.calendar.events.delete({
+                    'calendarId': 'primary',
+                    'eventId': testEventId
+                });
+
+                showResult('calendarResult', `✅ Đã xóa sự kiện ID: ${testEventId}`, 'success');
+                testEventId = null;
+            } catch (err) {
+                showResult('calendarResult', `❌ Lỗi: ${err.message}`, 'error');
+            }
+        }
+
+        // ============================================
+        // TASKS API TESTS
+        // ============================================
+        async function testListTasks() {
+            try {
+                const response = await gapi.client.tasks.tasks.list({
+                    'tasklist': '@default',
+                    'showCompleted': true,
+                    'maxResults': 10
+                });
+
+                const tasks = response.result.items || [];
+                let result = `✅ Tìm thấy ${tasks.length} tasks:\n\n`;
+                
+                tasks.forEach((task, index) => {
+                    result += `${index + 1}. ${task.title}\n`;
+                    result += `   Status: ${task.status === 'completed' ? '✅ Hoàn thành' : '⏳ Chưa xong'}\n`;
+                    if (task.due) {
+                        result += `   📅 Hạn: ${new Date(task.due).toLocaleDateString('vi-VN')}\n`;
+                    }
+                    result += '\n';
+                });
+
+                showResult('tasksResult', result, 'success');
+            } catch (err) {
+                showResult('tasksResult', `❌ Lỗi: ${err.message}`, 'error');
+            }
+        }
+
+        async function testCreateTask() {
+            try {
+                const tomorrow = new Date();
+                tomorrow.setDate(tomorrow.getDate() + 1);
+
+                const task = {
+                    'title': '🧪 Test Task from API Tester',
+                    'notes': 'Đây là task test, có thể xóa',
+                    'due': tomorrow.toISOString()
+                };
+
+                const response = await gapi.client.tasks.tasks.insert({
+                    'tasklist': '@default',
+                    'resource': task
+                });
+
+                testTaskId = response.result.id;
+                showResult('tasksResult', 
+                    `✅ Đã tạo task!\n\nTask ID: ${testTaskId}\nTên: ${task.title}\nHạn: ${tomorrow.toLocaleDateString('vi-VN')}`, 
+                    'success'
+                );
+            } catch (err) {
+                showResult('tasksResult', `❌ Lỗi: ${err.message}`, 'error');
+            }
+        }
+
+        async function testCompleteTask() {
+            if (!testTaskId) {
+                showResult('tasksResult', '❌ Vui lòng tạo task test trước!', 'error');
+                return;
+            }
+
+            try {
+                await gapi.client.tasks.tasks.patch({
+                    'tasklist': '@default',
+                    'task': testTaskId,
+                    'resource': {
+                        'status': 'completed',
+                        'completed': new Date().toISOString()
+                    }
+                });
+
+                showResult('tasksResult', `✅ Đã đánh dấu hoàn thành task ID: ${testTaskId}`, 'success');
+            } catch (err) {
+                showResult('tasksResult', `❌ Lỗi: ${err.message}`, 'error');
+            }
+        }
+
+        async function testDeleteTask() {
+            if (!testTaskId) {
+                showResult('tasksResult', '❌ Vui lòng tạo task test trước!', 'error');
+                return;
+            }
+
+            try {
+                await gapi.client.tasks.tasks.delete({
+                    'tasklist': '@default',
+                    'task': testTaskId
+                });
+
+                showResult('tasksResult', `✅ Đã xóa task ID: ${testTaskId}`, 'success');
+                testTaskId = null;
+            } catch (err) {
+                showResult('tasksResult', `❌ Lỗi: ${err.message}`, 'error');
+            }
+        }
+
+        // ============================================
+        // MAPS API TESTS
+        // ============================================
+        function testLoadMap() {
+            try {
+                const mapContainer = document.getElementById('mapContainer');
+                mapContainer.style.display = 'block';
+
+                map = new google.maps.Map(mapContainer, {
+                    center: { lat: 10.8231, lng: 106.6297 },
+                    zoom: 13
+                });
+
+                new google.maps.Marker({
+                    position: { lat: 10.8231, lng: 106.6297 },
+                    map: map,
+                    title: 'Hồ Chí Minh City'
+                });
+
+                showResult('mapsResult', '✅ Đã load bản đồ thành công!', 'success');
+            } catch (err) {
+                showResult('mapsResult', `❌ Lỗi: ${err.message}`, 'error');
+            }
+        }
+
+        function testGeocoding() {
+            try {
+                const geocoder = new google.maps.Geocoder();
+                geocoder.geocode({ address: 'Nhà hát Thành phố, Hồ Chí Minh' }, (results, status) => {
+                    if (status === 'OK') {
+                        const location = results[0].geometry.location;
+                        showResult('mapsResult', 
+                            `✅ Geocoding thành công!\n\nĐịa chỉ: ${results[0].formatted_address}\nLat: ${location.lat()}\nLng: ${location.lng()}`, 
+                            'success'
+                        );
+                    } else {
+                        showResult('mapsResult', `❌ Geocoding failed: ${status}`, 'error');
+                    }
+                });
+            } catch (err) {
+                showResult('mapsResult', `❌ Lỗi: ${err.message}`, 'error');
+            }
+        }
+
+        function testPlacesSearch() {
+            if (!map) {
+                showResult('mapsResult', '❌ Vui lòng load map trước!', 'error');
+                return;
+            }
+
+            try {
+                const service = new google.maps.places.PlacesService(map);
+                service.findPlaceFromQuery({
+                    query: 'Nhà hát Thành phố',
+                    fields: ['name', 'geometry', 'formatted_address'],
+                }, (results, status) => {
+                    if (status === google.maps.places.PlacesServiceStatus.OK && results) {
+                        showResult('mapsResult', 
+                            `✅ Tìm thấy địa điểm!\n\n${JSON.stringify(results[0], null, 2)}`, 
+                            'success'
+                        );
+                    } else {
+                        showResult('mapsResult', `❌ Places search failed: ${status}`, 'error');
+                    }
+                });
+            } catch (err) {
+                showResult('mapsResult', `❌ Lỗi: ${err.message}`, 'error');
+            }
+        }
+
+        // ============================================
+        // GEMINI API TESTS
+        // ============================================
+        async function testGeminiChat() {
+            try {
+                const response = await fetch(`${CONFIG.GEMINI_API_URL}?key=${CONFIG.GEMINI_API_KEY}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        contents: [{
+                            parts: [{ text: 'Xin chào! Bạn có thể giúp tôi quản lý lịch trình không?' }]
+                        }]
+                    })
+                });
+
+                const data = await response.json();
+                const aiResponse = data.candidates[0].content.parts[0].text;
+                showResult('geminiResult', `✅ Gemini phản hồi:\n\n${aiResponse}`, 'success');
+            } catch (err) {
+                showResult('geminiResult', `❌ Lỗi: ${err.message}`, 'error');
+            }
+        }
+
+        async function testGeminiEventParsing() {
+            try {
+                const response = await fetch(`${CONFIG.GEMINI_API_URL}?key=${CONFIG.GEMINI_API_KEY}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        contents: [{
+                            parts: [{
+                                text: `Phân tích text sau và trả về JSON format:
+"Họp team marketing ngày mai lúc 9 giờ sáng tại văn phòng"
+
+Trả về format: {"name": "...", "date": "...", "time": "...", "location": "..."}`
+                            }]
+                        }]
+                    })
+                });
+
+                const data = await response.json();
+                const aiResponse = data.candidates[0].content.parts[0].text;
+                showResult('geminiResult', `✅ Gemini parse sự kiện:\n\n${aiResponse}`, 'success');
+            } catch (err) {
+                showResult('geminiResult', `❌ Lỗi: ${err.message}`, 'error');
+            }
+        }
+
+        // ============================================
+        // INTEGRATION TEST
+        // ============================================
+        async function testFullWorkflow() {
+            let log = '🚀 Bắt đầu test toàn bộ workflow...\n\n';
+            showResult('integrationResult', log, 'success');
+
+            try {
+                // Step 1: Create event
+                log += '1️⃣ Tạo sự kiện...\n';
+                showResult('integrationResult', log, 'success');
+                
+                const tomorrow = new Date();
+                tomorrow.setDate(tomorrow.getDate() + 1);
+                tomorrow.setHours(14, 0, 0, 0);
+
+                const event = {
+                    'summary': '🧪 Integration Test Event',
+                    'location': 'Nhà hát Thành phố',
+                    'start': {
+                        'dateTime': tomorrow.toISOString(),
+                        'timeZone': 'Asia/Ho_Chi_Minh'
+                    },
+                    'end': {
+                        'dateTime': new Date(tomorrow.getTime() + 2 * 60 * 60 * 1000).toISOString(),
+                        'timeZone': 'Asia/Ho_Chi_Minh'
+                    }
+                };
+
+                const eventResponse = await gapi.client.calendar.events.insert({
+                    'calendarId': 'primary',
+                    'resource': event
+                });
+                log += `   ✅ Đã tạo event ID: ${eventResponse.result.id}\n\n`;
+                showResult('integrationResult', log, 'success');
+
+                // Step 2: Create task
+                log += '2️⃣ Tạo task liên quan...\n';
+                showResult('integrationResult', log, 'success');
+
+                const task = {
+                    'title': `📋 Task: ${event.summary}`,
+                    'notes': 'Chuẩn bị cho sự kiện',
+                    'due': tomorrow.toISOString()
+                };
+
+                const taskResponse = await gapi.client.tasks.tasks.insert({
+                    'tasklist': '@default',
+                    'resource': task
+                });
+                log += `   ✅ Đã tạo task ID: ${taskResponse.result.id}\n\n`;
+                showResult('integrationResult', log, 'success');
+
+                // Step 3: Verify
+                log += '3️⃣ Kiểm tra đồng bộ...\n';
+                showResult('integrationResult', log, 'success');
+
+                const eventsCheck = await gapi.client.calendar.events.list({
+                    'calendarId': 'primary',
+                    'timeMin': new Date().toISOString(),
+                    'maxResults': 1,
+                    'orderBy': 'startTime'
+                });
+                log += `   ✅ Calendar có ${eventsCheck.result.items.length} sự kiện\n`;
+                showResult('integrationResult', log, 'success');
+
+                const tasksCheck = await gapi.client.tasks.tasks.list({
+                    'tasklist': '@default',
+                    'maxResults': 1
+                });
+                log += `   ✅ Tasks có ${tasksCheck.result.items?.length || 0} tasks\n\n`;
+                showResult('integrationResult', log, 'success');
+
+                log += '✅ HOÀN TẤT! Tất cả APIs hoạt động tốt!\n';
+                log += '\nKiểm tra Google Calendar và Google Tasks app để xem kết quả.';
+                showResult('integrationResult', log, 'success');
+
+            } catch (err) {
+                log += `\n❌ Lỗi: ${err.message}`;
+                showResult('integrationResult', log, 'error');
+            }
+        }
+
+        // ============================================
+        // HELPER FUNCTIONS
+        // ============================================
+        function showResult(elementId, message, type) {
+            const element = document.getElementById(elementId);
+            element.style.display = 'block';
+            element.textContent = message;
+            element.className = `result ${type}`;
+        }
+    </script>
+</body>
+</html>
