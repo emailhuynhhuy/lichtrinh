@@ -619,17 +619,6 @@
             <button class="btn btn-secondary" onclick="handleSignoutClick()" style="display: none;" id="signoutBtn">
                 🚪 Đăng xuất
             </button>
-            
-            <div class="alert alert-info" style="margin-top: 20px; text-align: left;">
-                <strong>📋 Hướng dẫn setup:</strong>
-                <ol style="margin-left: 20px; margin-top: 10px;">
-                    <li>Tạo project tại <a href="https://console.cloud.google.com" target="_blank" style="color: var(--accent);">Google Cloud Console</a></li>
-                    <li>Bật API: Google Calendar, Google Tasks, Google Maps</li>
-                    <li>Tạo OAuth 2.0 Client ID (Web application)</li>
-                    <li>Thêm origins: http://localhost, https://your-domain.com</li>
-                    <li>Copy Client ID và API Key vào file config</li>
-                </ol>
-            </div>
         </div>
 
         <!-- Main Content -->
@@ -675,8 +664,22 @@
                 </div>
 
                 <div class="card">
-                    <h2 class="card-title">🗺️ Bản đồ địa điểm</h2>
-                    <div id="map"></div>
+                    <h2 class="card-title">📍 Quản lý địa điểm & Di chuyển</h2>
+                    <div class="alert alert-info">
+                        <strong>💡 Gợi ý:</strong> Để biết thời gian di chuyển chính xác giữa các địa điểm, 
+                        hãy sử dụng <strong>Google Maps</strong> trên điện thoại của bạn:
+                        <ul style="margin-left: 20px; margin-top: 10px;">
+                            <li>Mở <strong>Google Maps app</strong></li>
+                            <li>Nhập địa điểm đến và chọn phương tiện (xe máy/ô tô/xe buýt)</li>
+                            <li>Google Maps sẽ tính toán thời gian dựa trên tình hình giao thông thực tế</li>
+                            <li>Thêm thời gian dự kiến vào trường "Thời gian chuẩn bị" khi tạo sự kiện</li>
+                        </ul>
+                    </div>
+                    
+                    <div id="locationsList" style="margin-top: 20px;">
+                        <h3 style="color: var(--text-secondary); margin-bottom: 15px;">📌 Địa điểm trong tuần này</h3>
+                        <div id="weekLocations"></div>
+                    </div>
                 </div>
             </div>
 
@@ -734,7 +737,7 @@
 
                         <div class="form-group">
                             <label>📍 Địa điểm</label>
-                            <input type="text" id="eventLocation" placeholder="Tìm kiếm địa điểm..." onchange="searchLocation(this.value)">
+                            <input type="text" id="eventLocation" placeholder="Nhập địa điểm (VD: Nhà hát Thành phố HCM)">
                         </div>
 
                         <div class="form-group">
@@ -805,9 +808,9 @@
     </div>
 
     <!-- Google APIs -->
-    <script src="https://accounts.google.com/gsi/client" async defer></script>
-    <script src="https://apis.google.com/js/api.js" async defer></script>
-    <script src="https://maps.googleapis.com/maps/api/js?key=YOUR_MAPS_API_KEY&libraries=places"></script>
+    <script src="https://accounts.google.com/gsi/client" onload="gisLoaded()" async defer></script>
+    <script src="https://apis.google.com/js/api.js" onload="gapiLoaded()" async defer></script>
+
 
     <script>
         // ============================================
@@ -844,8 +847,6 @@
         let gapiInited = false;
         let gisInited = false;
         let accessToken = null;
-        let map;
-        let markers = [];
         let currentEvents = [];
 
         // ============================================
@@ -899,7 +900,6 @@
                 
                 // Load initial data
                 await syncAllData();
-                initMap();
             };
 
             if (gapi.client.getToken() === null) {
@@ -942,7 +942,7 @@
                 currentEvents = events;
                 renderCalendarEvents(events);
                 updateDashboard();
-                updateMapMarkers(events);
+                updateWeekLocations(events);
                 
                 return events;
             } catch (err) {
@@ -1168,82 +1168,96 @@
         }
 
         // ============================================
-        // GOOGLE MAPS
+        // LOCATION MANAGEMENT
         // ============================================
-        function initMap() {
-            map = new google.maps.Map(document.getElementById('map'), {
-                center: { lat: 10.8231, lng: 106.6297 }, // Ho Chi Minh City
-                zoom: 12,
-                styles: [
-                    {
-                        "elementType": "geometry",
-                        "stylers": [{"color": "#1a1a2e"}]
-                    },
-                    {
-                        "elementType": "labels.text.fill",
-                        "stylers": [{"color": "#ffffff"}]
-                    },
-                    {
-                        "elementType": "labels.text.stroke",
-                        "stylers": [{"color": "#1a1a2e"}]
+        function updateWeekLocations(events) {
+            const container = document.getElementById('weekLocations');
+            if (!container) return;
+            
+            // Get this week's events with locations
+            const today = new Date();
+            const weekStart = new Date(today);
+            weekStart.setDate(today.getDate() - today.getDay());
+            weekStart.setHours(0, 0, 0, 0);
+            
+            const weekEnd = new Date(weekStart);
+            weekEnd.setDate(weekStart.getDate() + 7);
+            
+            const weekEvents = events.filter(event => {
+                const eventDate = new Date(event.start.dateTime || event.start.date);
+                return eventDate >= weekStart && eventDate < weekEnd && event.location;
+            });
+            
+            if (weekEvents.length === 0) {
+                container.innerHTML = '<p style="color: var(--text-secondary);">Chưa có sự kiện nào có địa điểm trong tuần này</p>';
+                return;
+            }
+            
+            // Sort by date
+            weekEvents.sort((a, b) => {
+                const dateA = new Date(a.start.dateTime || a.start.date);
+                const dateB = new Date(b.start.dateTime || b.start.date);
+                return dateA - dateB;
+            });
+            
+            let html = '<div style="display: grid; gap: 15px;">';
+            
+            weekEvents.forEach((event, index) => {
+                const eventDate = new Date(event.start.dateTime || event.start.date);
+                const timeStr = eventDate.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
+                const dateStr = eventDate.toLocaleDateString('vi-VN', { weekday: 'short', month: 'short', day: 'numeric' });
+                
+                // Create Google Maps link
+                const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(event.location)}`;
+                
+                // Calculate travel time to next location
+                let travelInfo = '';
+                if (index < weekEvents.length - 1) {
+                    const nextEvent = weekEvents[index + 1];
+                    const nextDate = new Date(nextEvent.start.dateTime || nextEvent.start.date);
+                    const timeDiff = (nextDate - eventDate) / (1000 * 60); // minutes
+                    
+                    if (event.location !== nextEvent.location) {
+                        travelInfo = `
+                            <div style="margin-top: 8px; padding: 8px; background: rgba(255, 210, 63, 0.1); border-left: 3px solid var(--accent); border-radius: 4px;">
+                                <strong>⏱️ Thời gian đến địa điểm kế tiếp:</strong> ${Math.floor(timeDiff)} phút<br>
+                                <strong>📍 Đến:</strong> ${nextEvent.location}<br>
+                                <span style="color: var(--text-secondary); font-size: 0.9em;">
+                                    💡 Kiểm tra thời gian di chuyển thực tế trên Google Maps
+                                </span>
+                            </div>
+                        `;
                     }
-                ]
-            });
-        }
-
-        function updateMapMarkers(events) {
-            if (!map) return;
-            
-            // Clear existing markers
-            markers.forEach(marker => marker.setMap(null));
-            markers = [];
-
-            // Add markers for events with locations
-            events.forEach(event => {
-                if (event.location) {
-                    const geocoder = new google.maps.Geocoder();
-                    geocoder.geocode({ address: event.location }, (results, status) => {
-                        if (status === 'OK') {
-                            const marker = new google.maps.Marker({
-                                map: map,
-                                position: results[0].geometry.location,
-                                title: event.summary
-                            });
-
-                            const infowindow = new google.maps.InfoWindow({
-                                content: `
-                                    <div style="color: #000;">
-                                        <h3>${event.summary}</h3>
-                                        <p>${event.location}</p>
-                                        <p>${new Date(event.start.dateTime).toLocaleString('vi-VN')}</p>
-                                    </div>
-                                `
-                            });
-
-                            marker.addListener('click', () => {
-                                infowindow.open(map, marker);
-                            });
-
-                            markers.push(marker);
-                        }
-                    });
                 }
+                
+                html += `
+                    <div class="card" style="padding: 15px;">
+                        <div style="display: flex; justify-content: space-between; align-items: start;">
+                            <div style="flex: 1;">
+                                <div style="color: var(--accent); font-weight: 600; margin-bottom: 5px;">
+                                    ${dateStr} • ${timeStr}
+                                </div>
+                                <div style="font-size: 1.1em; font-weight: 600; margin-bottom: 8px;">
+                                    ${event.summary}
+                                </div>
+                                <div style="color: var(--text-secondary); display: flex; align-items: center; gap: 8px;">
+                                    <span>📍</span>
+                                    <span>${event.location}</span>
+                                </div>
+                                ${travelInfo}
+                            </div>
+                            <a href="${mapsUrl}" target="_blank" 
+                               class="btn btn-secondary" 
+                               style="margin-left: 15px; white-space: nowrap;">
+                                🗺️ Mở Maps
+                            </a>
+                        </div>
+                    </div>
+                `;
             });
-        }
-
-        function searchLocation(query) {
-            if (!query) return;
             
-            const service = new google.maps.places.PlacesService(map);
-            service.findPlaceFromQuery({
-                query: query,
-                fields: ['name', 'geometry'],
-            }, (results, status) => {
-                if (status === google.maps.places.PlacesServiceStatus.OK && results) {
-                    map.setCenter(results[0].geometry.location);
-                    map.setZoom(15);
-                }
-            });
+            html += '</div>';
+            container.innerHTML = html;
         }
 
         // ============================================
@@ -1427,10 +1441,9 @@ Trả lời ngắn gọn bằng tiếng Việt, có thể gợi ý tạo sự ki
         // ============================================
         // LOAD APIS
         // ============================================
-        window.onload = () => {
-            gapiLoaded();
-            gisLoaded();
-        };
+        // INITIALIZATION
+        // Scripts will auto-load via onload callbacks
+        // ============================================
     </script>
 </body>
 </html>
