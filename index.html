@@ -421,15 +421,6 @@
             font-size: 0.9rem;
         }
 
-        /* Map Container */
-        #map {
-            width: 100%;
-            height: 400px;
-            border-radius: 15px;
-            overflow: hidden;
-            margin-top: 20px;
-        }
-
         /* Chat Interface */
         .chat-container {
             background: var(--card-bg);
@@ -665,16 +656,6 @@
 
                 <div class="card">
                     <h2 class="card-title">📍 Quản lý địa điểm & Di chuyển</h2>
-                    <div class="alert alert-info">
-                        <strong>💡 Gợi ý:</strong> Để biết thời gian di chuyển chính xác giữa các địa điểm, 
-                        hãy sử dụng <strong>Google Maps</strong> trên điện thoại của bạn:
-                        <ul style="margin-left: 20px; margin-top: 10px;">
-                            <li>Mở <strong>Google Maps app</strong></li>
-                            <li>Nhập địa điểm đến và chọn phương tiện (xe máy/ô tô/xe buýt)</li>
-                            <li>Google Maps sẽ tính toán thời gian dựa trên tình hình giao thông thực tế</li>
-                            <li>Thêm thời gian dự kiến vào trường "Thời gian chuẩn bị" khi tạo sự kiện</li>
-                        </ul>
-                    </div>
                     
                     <div id="locationsList" style="margin-top: 20px;">
                         <h3 style="color: var(--text-secondary); margin-bottom: 15px;">📌 Địa điểm trong tuần này</h3>
@@ -988,13 +969,6 @@
         async function createEvent(e) {
             e.preventDefault();
             
-            // Check if user is still authenticated
-            if (!gapi.client.getToken()) {
-                showAlert('⚠️ Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.', 'error');
-                handleSignoutClick();
-                return;
-            }
-            
             const name = document.getElementById('eventName').value;
             const date = document.getElementById('eventDate').value;
             const time = document.getElementById('eventTime').value;
@@ -1055,14 +1029,7 @@
                 
             } catch (err) {
                 console.error('Error creating event:', err);
-                
-                // Check if it's an auth error
-                if (err.status === 401 || err.status === 403) {
-                    showAlert('⚠️ Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại.', 'error');
-                    handleSignoutClick();
-                } else {
-                    showAlert('❌ Lỗi tạo sự kiện: ' + err.message, 'error');
-                }
+                showAlert('❌ Lỗi tạo sự kiện: ' + err.message, 'error');
             }
         }
 
@@ -1229,9 +1196,6 @@
                 const timeStr = eventDate.toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
                 const dateStr = eventDate.toLocaleDateString('vi-VN', { weekday: 'short', month: 'short', day: 'numeric' });
                 
-                // Create Google Maps link
-                const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(event.location)}`;
-                
                 // Calculate travel time to next location
                 let travelInfo = '';
                 if (index < weekEvents.length - 1) {
@@ -1248,9 +1212,6 @@
                                 <div style="color: #E0E0E0; margin-bottom: 6px;">
                                     📍 Đến: <strong style="color: #FFFFFF;">${nextEvent.location}</strong>
                                 </div>
-                                <div style="color: var(--accent); font-size: 0.9em; font-style: italic;">
-                                    💡 Kiểm tra thời gian di chuyển thực tế trên Google Maps
-                                </div>
                             </div>
                         `;
                     }
@@ -1258,25 +1219,18 @@
                 
                 html += `
                     <div class="card" style="padding: 15px;">
-                        <div style="display: flex; justify-content: space-between; align-items: start;">
-                            <div style="flex: 1;">
-                                <div style="color: var(--accent); font-weight: 600; margin-bottom: 5px;">
-                                    ${dateStr} • ${timeStr}
-                                </div>
-                                <div style="font-size: 1.1em; font-weight: 600; margin-bottom: 8px;">
-                                    ${event.summary}
-                                </div>
-                                <div style="color: var(--text-secondary); display: flex; align-items: center; gap: 8px;">
-                                    <span>📍</span>
-                                    <span>${event.location}</span>
-                                </div>
-                                ${travelInfo}
+                        <div style="flex: 1;">
+                            <div style="color: var(--accent); font-weight: 600; margin-bottom: 5px;">
+                                ${dateStr} • ${timeStr}
                             </div>
-                            <a href="${mapsUrl}" target="_blank" 
-                               class="btn btn-secondary" 
-                               style="margin-left: 15px; white-space: nowrap;">
-                                🗺️ Mở Maps
-                            </a>
+                            <div style="font-size: 1.1em; font-weight: 600; margin-bottom: 8px;">
+                                ${event.summary}
+                            </div>
+                            <div style="color: var(--text-secondary); display: flex; align-items: center; gap: 8px;">
+                                <span>📍</span>
+                                <span>${event.location}</span>
+                            </div>
+                            ${travelInfo}
                         </div>
                     </div>
                 `;
