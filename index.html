@@ -871,6 +871,11 @@
                     throw (resp);
                 }
                 accessToken = resp.access_token;
+
+// ✅ THÊM: Set token vào gapi.client
+gapi.client.setToken({
+    access_token: accessToken
+});
                 
                 // Update UI
                 document.getElementById('authIndicator').classList.add('connected');
