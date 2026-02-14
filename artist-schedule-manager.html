@@ -1,0 +1,1707 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Artist Schedule Manager - Quản lý Lịch trình Nghệ sĩ</title>
+    <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary: #FF6B35;
+            --primary-dark: #E5511E;
+            --secondary: #004E89;
+            --accent: #FFD23F;
+            --bg-dark: #1A1A2E;
+            --bg-medium: #16213E;
+            --bg-light: #0F3460;
+            --text-primary: #FFFFFF;
+            --text-secondary: #A0AEC0;
+            --success: #48BB78;
+            --warning: #F6AD55;
+            --danger: #FC8181;
+            --card-bg: rgba(255, 255, 255, 0.05);
+            --card-hover: rgba(255, 255, 255, 0.08);
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(135deg, var(--bg-dark) 0%, var(--bg-medium) 50%, var(--bg-light) 100%);
+            color: var(--text-primary);
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        /* Background Animation */
+        body::before {
+            content: '';
+            position: fixed;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: 
+                radial-gradient(circle at 20% 30%, rgba(255, 107, 53, 0.1) 0%, transparent 50%),
+                radial-gradient(circle at 80% 70%, rgba(0, 78, 137, 0.1) 0%, transparent 50%),
+                radial-gradient(circle at 50% 50%, rgba(255, 210, 63, 0.05) 0%, transparent 50%);
+            animation: floatBackground 20s ease-in-out infinite;
+            z-index: -1;
+        }
+
+        @keyframes floatBackground {
+            0%, 100% { transform: translate(0, 0) rotate(0deg); }
+            33% { transform: translate(30px, -30px) rotate(1deg); }
+            66% { transform: translate(-20px, 20px) rotate(-1deg); }
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        /* Header */
+        header {
+            text-align: center;
+            padding: 40px 20px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        h1 {
+            font-family: 'Bebas Neue', sans-serif;
+            font-size: 4rem;
+            letter-spacing: 4px;
+            background: linear-gradient(135deg, var(--primary) 0%, var(--accent) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 10px;
+            animation: slideDown 0.8s ease-out;
+        }
+
+        @keyframes slideDown {
+            from {
+                opacity: 0;
+                transform: translateY(-30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .subtitle {
+            color: var(--text-secondary);
+            font-size: 1.2rem;
+            font-weight: 300;
+            animation: fadeIn 1s ease-out 0.3s both;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        /* Navigation Tabs */
+        .nav-tabs {
+            display: flex;
+            gap: 10px;
+            margin: 30px 0;
+            background: var(--card-bg);
+            padding: 10px;
+            border-radius: 15px;
+            backdrop-filter: blur(10px);
+            flex-wrap: wrap;
+        }
+
+        .nav-tab {
+            flex: 1;
+            min-width: 150px;
+            padding: 15px 25px;
+            background: transparent;
+            border: 2px solid transparent;
+            border-radius: 10px;
+            color: var(--text-secondary);
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-align: center;
+        }
+
+        .nav-tab:hover {
+            background: var(--card-hover);
+            color: var(--text-primary);
+        }
+
+        .nav-tab.active {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+            color: var(--text-primary);
+            border-color: var(--primary);
+            box-shadow: 0 5px 20px rgba(255, 107, 53, 0.3);
+        }
+
+        /* Tab Content */
+        .tab-content {
+            display: none;
+            animation: fadeInUp 0.5s ease-out;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* Cards */
+        .card {
+            background: var(--card-bg);
+            border-radius: 20px;
+            padding: 30px;
+            margin-bottom: 25px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            transition: all 0.3s ease;
+        }
+
+        .card:hover {
+            background: var(--card-hover);
+            transform: translateY(-3px);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+        }
+
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .card-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--primary);
+        }
+
+        /* Form Elements */
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        input, select, textarea {
+            width: 100%;
+            padding: 15px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 2px solid rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            color: var(--text-primary);
+            font-size: 1rem;
+            transition: all 0.3s ease;
+        }
+
+        input:focus, select:focus, textarea:focus {
+            outline: none;
+            border-color: var(--primary);
+            background: rgba(255, 255, 255, 0.08);
+            box-shadow: 0 0 0 3px rgba(255, 107, 53, 0.2);
+        }
+
+        textarea {
+            resize: vertical;
+            min-height: 100px;
+        }
+
+        /* Buttons */
+        .btn {
+            padding: 15px 30px;
+            border: none;
+            border-radius: 10px;
+            font-weight: 600;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+            color: white;
+            box-shadow: 0 4px 15px rgba(255, 107, 53, 0.3);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 25px rgba(255, 107, 53, 0.4);
+        }
+
+        .btn-secondary {
+            background: var(--secondary);
+            color: white;
+        }
+
+        .btn-secondary:hover {
+            background: #003d6b;
+        }
+
+        .btn-success {
+            background: var(--success);
+            color: white;
+        }
+
+        .btn-icon {
+            width: 45px;
+            height: 45px;
+            padding: 0;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+        }
+
+        /* Voice Input Button */
+        .voice-input-container {
+            position: relative;
+            margin-bottom: 20px;
+        }
+
+        .voice-btn {
+            width: 70px;
+            height: 70px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--accent) 0%, var(--primary) 100%);
+            border: none;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2rem;
+            transition: all 0.3s ease;
+            box-shadow: 0 5px 20px rgba(255, 210, 63, 0.4);
+        }
+
+        .voice-btn:hover {
+            transform: scale(1.1);
+            box-shadow: 0 8px 30px rgba(255, 210, 63, 0.6);
+        }
+
+        .voice-btn.recording {
+            animation: pulse 1.5s ease-in-out infinite;
+            background: var(--danger);
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.15); }
+        }
+
+        /* Event List */
+        .event-list {
+            display: grid;
+            gap: 15px;
+        }
+
+        .event-item {
+            background: var(--card-bg);
+            border-radius: 15px;
+            padding: 20px;
+            border-left: 5px solid var(--primary);
+            display: grid;
+            grid-template-columns: auto 1fr auto;
+            gap: 20px;
+            align-items: center;
+            transition: all 0.3s ease;
+        }
+
+        .event-item:hover {
+            background: var(--card-hover);
+            transform: translateX(5px);
+        }
+
+        .event-time {
+            text-align: center;
+            padding: 10px;
+            background: rgba(255, 107, 53, 0.2);
+            border-radius: 10px;
+            min-width: 100px;
+        }
+
+        .event-time-hour {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: var(--primary);
+        }
+
+        .event-time-date {
+            font-size: 0.85rem;
+            color: var(--text-secondary);
+        }
+
+        .event-details h3 {
+            font-size: 1.2rem;
+            margin-bottom: 5px;
+            color: var(--text-primary);
+        }
+
+        .event-location {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .event-team {
+            display: inline-block;
+            padding: 5px 12px;
+            background: var(--secondary);
+            border-radius: 20px;
+            font-size: 0.8rem;
+            margin-top: 8px;
+        }
+
+        .event-actions {
+            display: flex;
+            gap: 10px;
+        }
+
+        /* Alert Box */
+        .alert {
+            padding: 15px 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            font-weight: 500;
+            animation: slideInRight 0.5s ease-out;
+        }
+
+        @keyframes slideInRight {
+            from {
+                opacity: 0;
+                transform: translateX(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        .alert-warning {
+            background: rgba(246, 173, 85, 0.2);
+            border-left: 4px solid var(--warning);
+            color: var(--warning);
+        }
+
+        .alert-danger {
+            background: rgba(252, 129, 129, 0.2);
+            border-left: 4px solid var(--danger);
+            color: var(--danger);
+        }
+
+        .alert-success {
+            background: rgba(72, 187, 120, 0.2);
+            border-left: 4px solid var(--success);
+            color: var(--success);
+        }
+
+        /* Dashboard Stats */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .stat-card {
+            background: linear-gradient(135deg, var(--card-bg) 0%, rgba(255, 255, 255, 0.02) 100%);
+            padding: 25px;
+            border-radius: 15px;
+            text-align: center;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            transition: all 0.3s ease;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+        }
+
+        .stat-value {
+            font-size: 2.5rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, var(--primary) 0%, var(--accent) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .stat-label {
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+            margin-top: 8px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        /* Calendar View */
+        .calendar {
+            background: var(--card-bg);
+            border-radius: 20px;
+            padding: 20px;
+            backdrop-filter: blur(10px);
+        }
+
+        .calendar-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .calendar-grid {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 10px;
+        }
+
+        .calendar-day {
+            aspect-ratio: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            background: rgba(255, 255, 255, 0.03);
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+
+        .calendar-day:hover {
+            background: var(--card-hover);
+            transform: scale(1.05);
+        }
+
+        .calendar-day.has-event::after {
+            content: '';
+            position: absolute;
+            bottom: 5px;
+            width: 6px;
+            height: 6px;
+            background: var(--primary);
+            border-radius: 50%;
+        }
+
+        .calendar-day.today {
+            background: var(--primary);
+            color: white;
+            font-weight: 700;
+        }
+
+        /* Team Management */
+        .team-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            gap: 15px;
+        }
+
+        .team-card {
+            background: var(--card-bg);
+            padding: 20px;
+            border-radius: 15px;
+            border: 2px solid rgba(255, 255, 255, 0.1);
+            transition: all 0.3s ease;
+        }
+
+        .team-card:hover {
+            border-color: var(--primary);
+            transform: translateY(-3px);
+        }
+
+        .team-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .team-name {
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: var(--primary);
+        }
+
+        .team-count {
+            background: var(--secondary);
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 0.85rem;
+        }
+
+        .team-members {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .member-tag {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 5px 12px;
+            border-radius: 15px;
+            font-size: 0.85rem;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        /* AI Chat */
+        .chat-container {
+            background: var(--card-bg);
+            border-radius: 20px;
+            height: 500px;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .chat-messages {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .chat-message {
+            display: flex;
+            gap: 10px;
+            animation: messageSlide 0.3s ease-out;
+        }
+
+        @keyframes messageSlide {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .chat-message.user {
+            flex-direction: row-reverse;
+        }
+
+        .chat-bubble {
+            max-width: 70%;
+            padding: 15px 20px;
+            border-radius: 15px;
+            line-height: 1.5;
+        }
+
+        .chat-message.ai .chat-bubble {
+            background: var(--secondary);
+        }
+
+        .chat-message.user .chat-bubble {
+            background: var(--primary);
+        }
+
+        .chat-input-container {
+            padding: 20px;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            display: flex;
+            gap: 10px;
+        }
+
+        .chat-input {
+            flex: 1;
+        }
+
+        /* Loading Spinner */
+        .spinner {
+            border: 3px solid rgba(255, 255, 255, 0.1);
+            border-top: 3px solid var(--primary);
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* Modal */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            backdrop-filter: blur(5px);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal.active {
+            display: flex;
+            animation: fadeIn 0.3s ease-out;
+        }
+
+        .modal-content {
+            background: var(--bg-medium);
+            border-radius: 20px;
+            padding: 40px;
+            max-width: 600px;
+            width: 90%;
+            max-height: 90vh;
+            overflow-y: auto;
+            animation: scaleIn 0.3s ease-out;
+        }
+
+        @keyframes scaleIn {
+            from {
+                opacity: 0;
+                transform: scale(0.9);
+            }
+            to {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            h1 {
+                font-size: 2.5rem;
+            }
+
+            .nav-tabs {
+                flex-direction: column;
+            }
+
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .event-item {
+                grid-template-columns: 1fr;
+                text-align: center;
+            }
+
+            .event-actions {
+                justify-content: center;
+            }
+
+            .calendar-grid {
+                grid-template-columns: repeat(7, 1fr);
+                gap: 5px;
+            }
+        }
+
+        /* Scrollbar */
+        ::-webkit-scrollbar {
+            width: 10px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: var(--primary);
+            border-radius: 5px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--primary-dark);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🎭 ARTIST SCHEDULE</h1>
+            <p class="subtitle">Quản lý lịch trình nghệ sĩ thông minh</p>
+        </header>
+
+        <div class="nav-tabs">
+            <button class="nav-tab active" onclick="switchTab('dashboard')">📊 Tổng quan</button>
+            <button class="nav-tab" onclick="switchTab('quick-add')">⚡ Thêm nhanh</button>
+            <button class="nav-tab" onclick="switchTab('calendar')">📅 Lịch</button>
+            <button class="nav-tab" onclick="switchTab('teams')">👥 Team</button>
+            <button class="nav-tab" onclick="switchTab('ai-chat')">🤖 AI Assistant</button>
+        </div>
+
+        <!-- Dashboard Tab -->
+        <div id="dashboard" class="tab-content active">
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-value" id="totalEvents">0</div>
+                    <div class="stat-label">Sự kiện tuần này</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="totalWorkHours">0h</div>
+                    <div class="stat-label">Giờ làm việc</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="totalTravelHours">0h</div>
+                    <div class="stat-label">Giờ di chuyển</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" id="freeTime">0h</div>
+                    <div class="stat-label">Thời gian rảnh</div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <h2 class="card-title">📋 Lịch trình hôm nay</h2>
+                    <button class="btn btn-primary" onclick="switchTab('quick-add')">+ Thêm sự kiện</button>
+                </div>
+                <div id="todayEvents" class="event-list">
+                    <p style="color: var(--text-secondary); text-align: center; padding: 40px;">Chưa có sự kiện nào. Hãy thêm sự kiện đầu tiên!</p>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <h2 class="card-title">⏰ Sự kiện sắp tới</h2>
+                </div>
+                <div id="upcomingEvents" class="event-list">
+                    <p style="color: var(--text-secondary); text-align: center; padding: 40px;">Không có sự kiện sắp tới</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Quick Add Tab -->
+        <div id="quick-add" class="tab-content">
+            <div class="card">
+                <div class="card-header">
+                    <h2 class="card-title">⚡ Thêm sự kiện nhanh</h2>
+                </div>
+
+                <div id="conflictAlert"></div>
+
+                <div class="voice-input-container" style="text-align: center;">
+                    <button class="voice-btn" id="voiceBtn" onclick="toggleVoiceInput()">
+                        🎤
+                    </button>
+                    <p style="color: var(--text-secondary); margin-top: 10px;">Nhấn để nói (tiếng Việt)</p>
+                    <p id="voiceStatus" style="color: var(--accent); margin-top: 5px; min-height: 20px;"></p>
+                </div>
+
+                <form id="eventForm">
+                    <div class="form-group">
+                        <label>Tên công việc *</label>
+                        <input type="text" id="eventName" required placeholder="VD: Diễn kịch, Thu âm, Họp team...">
+                    </div>
+
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+                        <div class="form-group">
+                            <label>Ngày *</label>
+                            <input type="date" id="eventDate" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Giờ bắt đầu *</label>
+                            <input type="time" id="eventStartTime" required>
+                        </div>
+                    </div>
+
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+                        <div class="form-group">
+                            <label>Thời gian chuẩn bị (phút)</label>
+                            <input type="number" id="prepTime" value="0" min="0">
+                        </div>
+                        <div class="form-group">
+                            <label>Thời lượng (phút) *</label>
+                            <input type="number" id="eventDuration" required value="60" min="15">
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Địa điểm *</label>
+                        <input type="text" id="eventLocation" required placeholder="VD: Nhà hát Hòa Bình, Studio Q7...">
+                    </div>
+
+                    <div class="form-group">
+                        <label>Team</label>
+                        <select id="eventTeam">
+                            <option value="">Không có</option>
+                            <option value="voice-acting">Team Lồng tiếng</option>
+                            <option value="theater">Team Kịch nói</option>
+                            <option value="makeup">Team Hóa trang</option>
+                            <option value="production">Team Sản xuất</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Ghi chú</label>
+                        <textarea id="eventNotes" placeholder="Nhớ mang theo đạo cụ, micro..."></textarea>
+                    </div>
+
+                    <div style="display: flex; gap: 15px; margin-top: 30px;">
+                        <button type="submit" class="btn btn-primary" style="flex: 1;">
+                            ✓ Lưu sự kiện
+                        </button>
+                        <button type="button" class="btn btn-secondary" onclick="exportToICS()" style="flex: 1;">
+                            📥 Xuất sang Google Calendar
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Calendar Tab -->
+        <div id="calendar" class="tab-content">
+            <div class="calendar">
+                <div class="calendar-header">
+                    <button class="btn btn-secondary" onclick="changeMonth(-1)">◀ Tháng trước</button>
+                    <h2 id="calendarTitle">Tháng 1, 2026</h2>
+                    <button class="btn btn-secondary" onclick="changeMonth(1)">Tháng sau ▶</button>
+                </div>
+                <div class="calendar-grid" id="calendarGrid">
+                    <!-- Calendar will be generated by JS -->
+                </div>
+            </div>
+
+            <div class="card" style="margin-top: 20px;">
+                <div class="card-header">
+                    <h2 class="card-title">📋 Tất cả sự kiện</h2>
+                </div>
+                <div id="allEvents" class="event-list">
+                    <p style="color: var(--text-secondary); text-align: center; padding: 40px;">Chưa có sự kiện nào</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Teams Tab -->
+        <div id="teams" class="tab-content">
+            <div class="card">
+                <div class="card-header">
+                    <h2 class="card-title">👥 Quản lý Team</h2>
+                    <button class="btn btn-primary" onclick="showAddTeamModal()">+ Tạo team mới</button>
+                </div>
+
+                <div class="team-list" id="teamList">
+                    <!-- Teams will be generated by JS -->
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <h2 class="card-title">📧 Gửi lịch trình cho người ngoài</h2>
+                </div>
+                <form id="emailForm">
+                    <div class="form-group">
+                        <label>Email người nhận</label>
+                        <input type="email" id="recipientEmail" required placeholder="example@email.com">
+                    </div>
+                    <div class="form-group">
+                        <label>Chọn sự kiện</label>
+                        <select id="emailEventSelect" required>
+                            <option value="">-- Chọn sự kiện --</option>
+                        </select>
+                    </div>
+                    <button type="submit" class="btn btn-primary">📧 Gửi email</button>
+                </form>
+            </div>
+        </div>
+
+        <!-- AI Chat Tab -->
+        <div id="ai-chat" class="tab-content">
+            <div class="card">
+                <div class="alert alert-warning">
+                    <span>⚠️</span>
+                    <div>
+                        <strong>Chức năng đang chờ tích hợp Gemini API</strong><br>
+                        Xem hướng dẫn tích hợp bên dưới để kích hoạt AI Assistant
+                    </div>
+                </div>
+
+                <div class="chat-container">
+                    <div class="chat-messages" id="chatMessages">
+                        <div class="chat-message ai">
+                            <div class="chat-bubble">
+                                👋 Xin chào! Tôi là AI Assistant của bạn. Sau khi tích hợp Gemini API, tôi có thể giúp bạn:
+                                <br><br>
+                                ✅ Phân tích lịch trình thông minh<br>
+                                ✅ Đề xuất tối ưu hóa thời gian<br>
+                                ✅ Trả lời câu hỏi về lịch của bạn<br>
+                                ✅ Tạo sự kiện bằng ngôn ngữ tự nhiên
+                            </div>
+                        </div>
+                    </div>
+                    <div class="chat-input-container">
+                        <input type="text" class="chat-input" id="chatInput" placeholder="Nhập tin nhắn... (Cần Gemini API)" disabled>
+                        <button class="btn btn-primary" onclick="sendChatMessage()" disabled>Gửi</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <h2 class="card-title">🔧 Hướng dẫn tích hợp Gemini API</h2>
+                </div>
+                <div style="color: var(--text-secondary); line-height: 1.8;">
+                    <h3 style="color: var(--primary); margin-bottom: 15px;">Bước 1: Lấy API Key</h3>
+                    <ol style="margin-left: 20px; margin-bottom: 20px;">
+                        <li>Truy cập: <a href="https://aistudio.google.com/app/apikey" target="_blank" style="color: var(--accent);">https://aistudio.google.com/app/apikey</a></li>
+                        <li>Đăng nhập bằng tài khoản Google</li>
+                        <li>Click "Create API Key" → Chọn project</li>
+                        <li>Copy API key (bắt đầu bằng "AIza...")</li>
+                    </ol>
+
+                    <h3 style="color: var(--primary); margin-bottom: 15px;">Bước 2: Thêm vào code</h3>
+                    <ol style="margin-left: 20px; margin-bottom: 20px;">
+                        <li>Mở file này bằng text editor</li>
+                        <li>Tìm dòng: <code style="background: rgba(255,255,255,0.1); padding: 2px 8px; border-radius: 5px;">const GEMINI_API_KEY = 'YOUR_API_KEY_HERE';</code></li>
+                        <li>Thay YOUR_API_KEY_HERE bằng API key của bạn</li>
+                        <li>Lưu file và tải lại trang</li>
+                    </ol>
+
+                    <h3 style="color: var(--primary); margin-bottom: 15px;">Chi phí sử dụng:</h3>
+                    <p>• Gemini 2.0 Flash: <strong>Miễn phí</strong> đến 15 requests/phút</p>
+                    <p>• Vượt hạn mức: ~$0.15/1 triệu ký tự (~$0-5/tháng)</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add Team Modal -->
+    <div id="addTeamModal" class="modal">
+        <div class="modal-content">
+            <h2 style="color: var(--primary); margin-bottom: 20px;">Tạo Team mới</h2>
+            <form id="addTeamForm">
+                <div class="form-group">
+                    <label>Tên Team</label>
+                    <input type="text" id="newTeamName" required>
+                </div>
+                <div class="form-group">
+                    <label>Thành viên (mỗi dòng 1 người)</label>
+                    <textarea id="newTeamMembers" rows="5" placeholder="Nguyễn Văn A&#10;Trần Thị B&#10;Lê Văn C"></textarea>
+                </div>
+                <div style="display: flex; gap: 15px; margin-top: 20px;">
+                    <button type="submit" class="btn btn-primary" style="flex: 1;">Tạo team</button>
+                    <button type="button" class="btn btn-secondary" onclick="closeAddTeamModal()" style="flex: 1;">Hủy</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        // ============================================
+        // GEMINI API CONFIGURATION
+        // ============================================
+        const GEMINI_API_KEY = 'YOUR_API_KEY_HERE'; // Thay bằng API key của bạn
+        const GEMINI_API_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent';
+
+        // ============================================
+        // DATA STORAGE
+        // ============================================
+        let events = JSON.parse(localStorage.getItem('events')) || [];
+        let teams = JSON.parse(localStorage.getItem('teams')) || [
+            {
+                id: 'voice-acting',
+                name: 'Team Lồng tiếng',
+                members: ['Nguyễn Văn A', 'Trần Thị B']
+            },
+            {
+                id: 'theater',
+                name: 'Team Kịch nói',
+                members: ['Lê Văn C', 'Phạm Thị D']
+            },
+            {
+                id: 'makeup',
+                name: 'Team Hóa trang',
+                members: ['Hoàng Văn E']
+            },
+            {
+                id: 'production',
+                name: 'Team Sản xuất',
+                members: ['Võ Thị F', 'Đặng Văn G']
+            }
+        ];
+
+        let currentMonth = new Date().getMonth();
+        let currentYear = new Date().getFullYear();
+
+        // ============================================
+        // TAB SWITCHING
+        // ============================================
+        function switchTab(tabName) {
+            document.querySelectorAll('.tab-content').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            document.querySelectorAll('.nav-tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+
+            document.getElementById(tabName).classList.add('active');
+            event.target.classList.add('active');
+
+            if (tabName === 'dashboard') {
+                updateDashboard();
+            } else if (tabName === 'calendar') {
+                renderCalendar();
+                renderAllEvents();
+            } else if (tabName === 'teams') {
+                renderTeams();
+            }
+        }
+
+        // ============================================
+        // VOICE INPUT
+        // ============================================
+        let recognition;
+        let isRecording = false;
+
+        function initVoiceRecognition() {
+            if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+                const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+                recognition = new SpeechRecognition();
+                recognition.lang = 'vi-VN';
+                recognition.continuous = false;
+                recognition.interimResults = false;
+
+                recognition.onstart = function() {
+                    document.getElementById('voiceStatus').textContent = '🎤 Đang nghe...';
+                };
+
+                recognition.onresult = function(event) {
+                    const transcript = event.results[0][0].transcript;
+                    document.getElementById('voiceStatus').textContent = `✓ Đã nghe: "${transcript}"`;
+                    parseVoiceInput(transcript);
+                };
+
+                recognition.onerror = function(event) {
+                    document.getElementById('voiceStatus').textContent = `❌ Lỗi: ${event.error}`;
+                    isRecording = false;
+                    document.getElementById('voiceBtn').classList.remove('recording');
+                };
+
+                recognition.onend = function() {
+                    isRecording = false;
+                    document.getElementById('voiceBtn').classList.remove('recording');
+                };
+            } else {
+                document.getElementById('voiceStatus').textContent = '❌ Trình duyệt không hỗ trợ nhập giọng nói';
+            }
+        }
+
+        function toggleVoiceInput() {
+            if (!recognition) {
+                initVoiceRecognition();
+            }
+
+            if (isRecording) {
+                recognition.stop();
+            } else {
+                recognition.start();
+                isRecording = true;
+                document.getElementById('voiceBtn').classList.add('recording');
+            }
+        }
+
+        function parseVoiceInput(text) {
+            // Simple parsing - with Gemini API, this will be much more intelligent
+            document.getElementById('eventName').value = text;
+            
+            // Set default date to today
+            const today = new Date();
+            document.getElementById('eventDate').value = today.toISOString().split('T')[0];
+            
+            showAlert('success', 'Đã điền tên công việc. Vui lòng điền thêm thông tin chi tiết.', 'conflictAlert');
+        }
+
+        // ============================================
+        // EVENT FORM HANDLING
+        // ============================================
+        document.getElementById('eventForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+
+            const newEvent = {
+                id: Date.now(),
+                name: document.getElementById('eventName').value,
+                date: document.getElementById('eventDate').value,
+                startTime: document.getElementById('eventStartTime').value,
+                prepTime: parseInt(document.getElementById('prepTime').value) || 0,
+                duration: parseInt(document.getElementById('eventDuration').value),
+                location: document.getElementById('eventLocation').value,
+                team: document.getElementById('eventTeam').value,
+                notes: document.getElementById('eventNotes').value
+            };
+
+            // Check for conflicts
+            const conflict = checkConflict(newEvent);
+            if (conflict) {
+                showAlert('danger', conflict, 'conflictAlert');
+                return;
+            }
+
+            events.push(newEvent);
+            saveEvents();
+            
+            showAlert('success', '✓ Đã thêm sự kiện thành công!', 'conflictAlert');
+            document.getElementById('eventForm').reset();
+            
+            updateDashboard();
+        });
+
+        function checkConflict(newEvent) {
+            const newStart = new Date(`${newEvent.date}T${newEvent.startTime}`);
+            const newEnd = new Date(newStart.getTime() + newEvent.duration * 60000);
+
+            for (let event of events) {
+                if (event.date === newEvent.date) {
+                    const eventStart = new Date(`${event.date}T${event.startTime}`);
+                    const eventEnd = new Date(eventStart.getTime() + event.duration * 60000);
+
+                    // Check time overlap
+                    if (newStart < eventEnd && newEnd > eventStart) {
+                        return `⚠️ Xung đột: Trùng thời gian với sự kiện "${event.name}" (${event.startTime})`;
+                    }
+
+                    // Check travel time if locations are different
+                    if (event.location !== newEvent.location && eventEnd <= newStart) {
+                        const timeBetween = (newStart - eventEnd) / 60000; // minutes
+                        if (timeBetween < 30) { // Assuming minimum 30 min travel time
+                            return `⚠️ Cảnh báo: Chỉ có ${timeBetween} phút giữa 2 sự kiện ở địa điểm khác nhau. Có thể không đủ thời gian di chuyển.`;
+                        }
+                    }
+                }
+            }
+
+            return null;
+        }
+
+        function showAlert(type, message, containerId) {
+            const container = document.getElementById(containerId);
+            container.innerHTML = `
+                <div class="alert alert-${type}">
+                    <span>${type === 'success' ? '✓' : type === 'warning' ? '⚠️' : '❌'}</span>
+                    <div>${message}</div>
+                </div>
+            `;
+
+            if (type === 'success') {
+                setTimeout(() => {
+                    container.innerHTML = '';
+                }, 5000);
+            }
+        }
+
+        // ============================================
+        // DASHBOARD
+        // ============================================
+        function updateDashboard() {
+            const today = new Date();
+            const startOfWeek = new Date(today);
+            startOfWeek.setDate(today.getDate() - today.getDay());
+            const endOfWeek = new Date(startOfWeek);
+            endOfWeek.setDate(startOfWeek.getDate() + 7);
+
+            const weekEvents = events.filter(e => {
+                const eventDate = new Date(e.date);
+                return eventDate >= startOfWeek && eventDate < endOfWeek;
+            });
+
+            // Calculate stats
+            let totalWorkMinutes = 0;
+            let totalTravelMinutes = 0;
+
+            weekEvents.forEach((event, index) => {
+                totalWorkMinutes += event.duration;
+                
+                if (index > 0) {
+                    const prevEvent = weekEvents[index - 1];
+                    if (prevEvent.date === event.date && prevEvent.location !== event.location) {
+                        totalTravelMinutes += 30; // Estimate
+                    }
+                }
+            });
+
+            document.getElementById('totalEvents').textContent = weekEvents.length;
+            document.getElementById('totalWorkHours').textContent = Math.round(totalWorkMinutes / 60) + 'h';
+            document.getElementById('totalTravelHours').textContent = Math.round(totalTravelMinutes / 60) + 'h';
+            
+            const weekMinutes = 7 * 24 * 60;
+            const freeMinutes = weekMinutes - totalWorkMinutes - totalTravelMinutes - (8 * 7 * 60); // Minus sleep
+            document.getElementById('freeTime').textContent = Math.max(0, Math.round(freeMinutes / 60)) + 'h';
+
+            // Render today's events
+            renderTodayEvents();
+            renderUpcomingEvents();
+        }
+
+        function renderTodayEvents() {
+            const today = new Date().toISOString().split('T')[0];
+            const todayEvents = events.filter(e => e.date === today).sort((a, b) => a.startTime.localeCompare(b.startTime));
+
+            const container = document.getElementById('todayEvents');
+            
+            if (todayEvents.length === 0) {
+                container.innerHTML = '<p style="color: var(--text-secondary); text-align: center; padding: 40px;">Không có sự kiện nào hôm nay</p>';
+                return;
+            }
+
+            container.innerHTML = todayEvents.map(event => renderEventItem(event)).join('');
+        }
+
+        function renderUpcomingEvents() {
+            const today = new Date().toISOString().split('T')[0];
+            const upcoming = events
+                .filter(e => e.date > today)
+                .sort((a, b) => a.date.localeCompare(b.date) || a.startTime.localeCompare(b.startTime))
+                .slice(0, 5);
+
+            const container = document.getElementById('upcomingEvents');
+            
+            if (upcoming.length === 0) {
+                container.innerHTML = '<p style="color: var(--text-secondary); text-align: center; padding: 40px;">Không có sự kiện sắp tới</p>';
+                return;
+            }
+
+            container.innerHTML = upcoming.map(event => renderEventItem(event)).join('');
+        }
+
+        function renderEventItem(event) {
+            const date = new Date(event.date);
+            const dateStr = date.toLocaleDateString('vi-VN', { day: '2-digit', month: '2-digit' });
+            const teamName = teams.find(t => t.id === event.team)?.name || '';
+
+            return `
+                <div class="event-item">
+                    <div class="event-time">
+                        <div class="event-time-hour">${event.startTime}</div>
+                        <div class="event-time-date">${dateStr}</div>
+                    </div>
+                    <div class="event-details">
+                        <h3>${event.name}</h3>
+                        <div class="event-location">📍 ${event.location}</div>
+                        ${teamName ? `<span class="event-team">👥 ${teamName}</span>` : ''}
+                        ${event.notes ? `<div style="color: var(--text-secondary); margin-top: 8px; font-size: 0.9rem;">📝 ${event.notes}</div>` : ''}
+                    </div>
+                    <div class="event-actions">
+                        <button class="btn btn-secondary btn-icon" onclick="editEvent(${event.id})" title="Chỉnh sửa">✏️</button>
+                        <button class="btn btn-secondary btn-icon" onclick="deleteEvent(${event.id})" title="Xóa">🗑️</button>
+                    </div>
+                </div>
+            `;
+        }
+
+        function deleteEvent(id) {
+            if (confirm('Bạn có chắc muốn xóa sự kiện này?')) {
+                events = events.filter(e => e.id !== id);
+                saveEvents();
+                updateDashboard();
+                renderCalendar();
+                renderAllEvents();
+            }
+        }
+
+        // ============================================
+        // CALENDAR
+        // ============================================
+        function renderCalendar() {
+            const firstDay = new Date(currentYear, currentMonth, 1);
+            const lastDay = new Date(currentYear, currentMonth + 1, 0);
+            const daysInMonth = lastDay.getDate();
+            const startDay = firstDay.getDay();
+
+            document.getElementById('calendarTitle').textContent = 
+                `Tháng ${currentMonth + 1}, ${currentYear}`;
+
+            const grid = document.getElementById('calendarGrid');
+            grid.innerHTML = '';
+
+            // Day headers
+            ['CN', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7'].forEach(day => {
+                const header = document.createElement('div');
+                header.style.textAlign = 'center';
+                header.style.fontWeight = '700';
+                header.style.padding = '10px';
+                header.style.color = 'var(--text-secondary)';
+                header.textContent = day;
+                grid.appendChild(header);
+            });
+
+            // Empty cells before month starts
+            for (let i = 0; i < startDay; i++) {
+                const empty = document.createElement('div');
+                grid.appendChild(empty);
+            }
+
+            // Days
+            const today = new Date().toISOString().split('T')[0];
+            for (let day = 1; day <= daysInMonth; day++) {
+                const dateStr = `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+                const hasEvent = events.some(e => e.date === dateStr);
+                const isToday = dateStr === today;
+
+                const dayEl = document.createElement('div');
+                dayEl.className = 'calendar-day';
+                if (hasEvent) dayEl.classList.add('has-event');
+                if (isToday) dayEl.classList.add('today');
+                dayEl.textContent = day;
+                dayEl.onclick = () => showDayEvents(dateStr);
+                grid.appendChild(dayEl);
+            }
+        }
+
+        function changeMonth(delta) {
+            currentMonth += delta;
+            if (currentMonth < 0) {
+                currentMonth = 11;
+                currentYear--;
+            } else if (currentMonth > 11) {
+                currentMonth = 0;
+                currentYear++;
+            }
+            renderCalendar();
+        }
+
+        function showDayEvents(date) {
+            const dayEvents = events.filter(e => e.date === date);
+            if (dayEvents.length === 0) {
+                alert('Không có sự kiện nào trong ngày này');
+                return;
+            }
+
+            const dateObj = new Date(date);
+            const dateStr = dateObj.toLocaleDateString('vi-VN', { 
+                weekday: 'long', 
+                year: 'numeric', 
+                month: 'long', 
+                day: 'numeric' 
+            });
+
+            alert(`Sự kiện ngày ${dateStr}:\n\n` + 
+                dayEvents.map(e => `• ${e.startTime} - ${e.name} tại ${e.location}`).join('\n'));
+        }
+
+        function renderAllEvents() {
+            const container = document.getElementById('allEvents');
+            const sortedEvents = [...events].sort((a, b) => 
+                a.date.localeCompare(b.date) || a.startTime.localeCompare(b.startTime)
+            );
+
+            if (sortedEvents.length === 0) {
+                container.innerHTML = '<p style="color: var(--text-secondary); text-align: center; padding: 40px;">Chưa có sự kiện nào</p>';
+                return;
+            }
+
+            container.innerHTML = sortedEvents.map(event => renderEventItem(event)).join('');
+        }
+
+        // ============================================
+        // TEAMS MANAGEMENT
+        // ============================================
+        function renderTeams() {
+            const container = document.getElementById('teamList');
+            container.innerHTML = teams.map(team => `
+                <div class="team-card">
+                    <div class="team-header">
+                        <div class="team-name">${team.name}</div>
+                        <div class="team-count">${team.members.length} người</div>
+                    </div>
+                    <div class="team-members">
+                        ${team.members.map(member => `
+                            <span class="member-tag">👤 ${member}</span>
+                        `).join('')}
+                    </div>
+                    <div style="margin-top: 15px; display: flex; gap: 10px;">
+                        <button class="btn btn-secondary" onclick="editTeam('${team.id}')" style="flex: 1;">✏️ Sửa</button>
+                        <button class="btn btn-secondary" onclick="deleteTeam('${team.id}')" style="flex: 1;">🗑️ Xóa</button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function showAddTeamModal() {
+            document.getElementById('addTeamModal').classList.add('active');
+        }
+
+        function closeAddTeamModal() {
+            document.getElementById('addTeamModal').classList.remove('active');
+            document.getElementById('addTeamForm').reset();
+        }
+
+        document.getElementById('addTeamForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const name = document.getElementById('newTeamName').value;
+            const membersText = document.getElementById('newTeamMembers').value;
+            const members = membersText.split('\n').filter(m => m.trim());
+
+            const newTeam = {
+                id: Date.now().toString(),
+                name: name,
+                members: members
+            };
+
+            teams.push(newTeam);
+            saveTeams();
+            
+            closeAddTeamModal();
+            renderTeams();
+            
+            // Update team select in event form
+            const select = document.getElementById('eventTeam');
+            const option = document.createElement('option');
+            option.value = newTeam.id;
+            option.textContent = newTeam.name;
+            select.appendChild(option);
+        });
+
+        function deleteTeam(id) {
+            if (confirm('Bạn có chắc muốn xóa team này?')) {
+                teams = teams.filter(t => t.id !== id);
+                saveTeams();
+                renderTeams();
+            }
+        }
+
+        // ============================================
+        // EXPORT TO ICS
+        // ============================================
+        function exportToICS() {
+            if (events.length === 0) {
+                alert('Chưa có sự kiện nào để xuất');
+                return;
+            }
+
+            let icsContent = `BEGIN:VCALENDAR
+VERSION:2.0
+PRODID:-//Artist Schedule Manager//EN
+CALSCALE:GREGORIAN
+METHOD:PUBLISH
+X-WR-CALNAME:Lịch Nghệ Sĩ
+X-WR-TIMEZONE:Asia/Ho_Chi_Minh
+`;
+
+            events.forEach(event => {
+                const startDateTime = new Date(`${event.date}T${event.startTime}`);
+                const endDateTime = new Date(startDateTime.getTime() + event.duration * 60000);
+
+                const formatDate = (date) => {
+                    return date.toISOString().replace(/[-:]/g, '').split('.')[0] + 'Z';
+                };
+
+                icsContent += `BEGIN:VEVENT
+UID:${event.id}@artistschedule.app
+DTSTAMP:${formatDate(new Date())}
+DTSTART:${formatDate(startDateTime)}
+DTEND:${formatDate(endDateTime)}
+SUMMARY:${event.name}
+LOCATION:${event.location}
+DESCRIPTION:${event.notes || ''}
+STATUS:CONFIRMED
+SEQUENCE:0
+END:VEVENT
+`;
+            });
+
+            icsContent += 'END:VCALENDAR';
+
+            const blob = new Blob([icsContent], { type: 'text/calendar;charset=utf-8' });
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = 'lich-nghe-si.ics';
+            link.click();
+
+            alert('✓ Đã xuất file ICS! Hãy mở file để thêm vào Google Calendar.');
+        }
+
+        // ============================================
+        // EMAIL FORM
+        // ============================================
+        document.getElementById('emailForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const email = document.getElementById('recipientEmail').value;
+            const eventId = parseInt(document.getElementById('emailEventSelect').value);
+            const event = events.find(e => e.id === eventId);
+
+            if (!event) {
+                alert('Vui lòng chọn sự kiện');
+                return;
+            }
+
+            // Create mailto link
+            const subject = encodeURIComponent(`Lời mời: ${event.name}`);
+            const body = encodeURIComponent(`
+Xin chào,
+
+Tôi muốn chia sẻ lịch trình sau với bạn:
+
+📋 Sự kiện: ${event.name}
+📅 Ngày: ${new Date(event.date).toLocaleDateString('vi-VN')}
+⏰ Giờ: ${event.startTime}
+⏱️ Thời lượng: ${event.duration} phút
+📍 Địa điểm: ${event.location}
+${event.notes ? `\n📝 Ghi chú: ${event.notes}` : ''}
+
+Mong bạn sắp xếp tham gia.
+
+Trân trọng!
+            `);
+
+            window.location.href = `mailto:${email}?subject=${subject}&body=${body}`;
+            
+            alert('✓ Đã mở email client. Vui lòng gửi email.');
+        });
+
+        // Update event select options
+        function updateEmailEventSelect() {
+            const select = document.getElementById('emailEventSelect');
+            select.innerHTML = '<option value="">-- Chọn sự kiện --</option>';
+            
+            events.forEach(event => {
+                const option = document.createElement('option');
+                option.value = event.id;
+                option.textContent = `${event.name} - ${new Date(event.date).toLocaleDateString('vi-VN')} ${event.startTime}`;
+                select.appendChild(option);
+            });
+        }
+
+        // ============================================
+        // AI CHAT (Ready for Gemini Integration)
+        // ============================================
+        async function sendChatMessage() {
+            const input = document.getElementById('chatInput');
+            const message = input.value.trim();
+            
+            if (!message) return;
+
+            // Add user message to chat
+            addMessageToChat('user', message);
+            input.value = '';
+
+            // Check if Gemini API is configured
+            if (GEMINI_API_KEY === 'YOUR_API_KEY_HERE') {
+                addMessageToChat('ai', '⚠️ Vui lòng cấu hình Gemini API Key trước. Xem hướng dẫn bên dưới.');
+                return;
+            }
+
+            // Call Gemini API
+            try {
+                const response = await fetch(`${GEMINI_API_URL}?key=${GEMINI_API_KEY}`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        contents: [{
+                            parts: [{
+                                text: `Bạn là trợ lý AI quản lý lịch trình nghệ sĩ. Dữ liệu lịch hiện tại: ${JSON.stringify(events)}. 
+                                
+Câu hỏi của người dùng: ${message}
+
+Hãy trả lời ngắn gọn, hữu ích và bằng tiếng Việt.`
+                            }]
+                        }]
+                    })
+                });
+
+                const data = await response.json();
+                const aiResponse = data.candidates[0].content.parts[0].text;
+                
+                addMessageToChat('ai', aiResponse);
+            } catch (error) {
+                addMessageToChat('ai', '❌ Lỗi kết nối với Gemini API. Vui lòng kiểm tra API key.');
+                console.error('Gemini API Error:', error);
+            }
+        }
+
+        function addMessageToChat(sender, message) {
+            const messagesContainer = document.getElementById('chatMessages');
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `chat-message ${sender}`;
+            messageDiv.innerHTML = `
+                <div class="chat-bubble">${message}</div>
+            `;
+            messagesContainer.appendChild(messageDiv);
+            messagesContainer.scrollTop = messagesContainer.scrollHeight;
+        }
+
+        // ============================================
+        // LOCAL STORAGE
+        // ============================================
+        function saveEvents() {
+            localStorage.setItem('events', JSON.stringify(events));
+        }
+
+        function saveTeams() {
+            localStorage.setItem('teams', JSON.stringify(teams));
+        }
+
+        // ============================================
+        // INITIALIZATION
+        // ============================================
+        document.addEventListener('DOMContentLoaded', function() {
+            // Set default date to today
+            document.getElementById('eventDate').value = new Date().toISOString().split('T')[0];
+            
+            // Initialize
+            initVoiceRecognition();
+            updateDashboard();
+            renderCalendar();
+            renderTeams();
+            updateEmailEventSelect();
+            
+            // Enable chat if API is configured
+            if (GEMINI_API_KEY !== 'YOUR_API_KEY_HERE') {
+                document.getElementById('chatInput').disabled = false;
+                document.querySelector('#ai-chat .btn-primary').disabled = false;
+                document.querySelector('#ai-chat .alert-warning').remove();
+            }
+        });
+
+        // Handle Enter key in chat
+        document.getElementById('chatInput')?.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                sendChatMessage();
+            }
+        });
+    </script>
+</body>
+</html>
