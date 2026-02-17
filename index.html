@@ -863,10 +863,41 @@
                 <div class="card">
                     <div class="card-header">
                         <h2 class="card-title">✅ Google Tasks</h2>
-                        <button class="btn btn-primary" onclick="loadTasks()">
-                            🔄 Tải lại
-                        </button>
+                        <div style="display: flex; gap: 10px;">
+                            <button class="btn btn-primary" onclick="showCreateTaskForm()">
+                                ➕ Tạo Task
+                            </button>
+                            <button class="btn btn-secondary" onclick="loadTasks()">
+                                🔄 Tải lại
+                            </button>
+                        </div>
                     </div>
+
+                    <!-- Create Task Form (hidden by default) -->
+                    <div id="createTaskForm" class="card" style="display: none; background: var(--bg-medium);">
+                        <h3 class="card-title" style="margin-bottom: 15px;">Tạo Task mới</h3>
+                        <div class="form-group">
+                            <label>Tên Task</label>
+                            <input type="text" id="taskTitle" placeholder="Nhập tên task...">
+                        </div>
+                        <div class="form-group">
+                            <label>Ngày hết hạn</label>
+                            <input type="date" id="taskDueDate">
+                        </div>
+                        <div class="form-group">
+                            <label>Ghi chú</label>
+                            <textarea id="taskNotes" placeholder="Thêm ghi chú..."></textarea>
+                        </div>
+                        <div style="display: flex; gap: 10px;">
+                            <button class="btn btn-primary" onclick="createStandaloneTask()">
+                                ✅ Tạo Task
+                            </button>
+                            <button class="btn btn-secondary" onclick="hideCreateTaskForm()">
+                                ❌ Hủy
+                            </button>
+                        </div>
+                    </div>
+
                     <div id="tasksList"></div>
                 </div>
             </div>
@@ -993,7 +1024,7 @@
 
             // Gemini API
             GEMINI_API_KEY: 'AIzaSyAqp_9ktO7lj84dvkrPHACxjJ0pjTTGdUE',
-            GEMINI_API_URL: 'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent',
+            GEMINI_API_URL: 'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent',
 
             // Scopes
             SCOPES: [
@@ -1408,6 +1439,8 @@
                     'due': new Date(dueDate).toISOString()
                 };
 
+                console.log('[Task] Creating task:', task);
+
                 await gapi.client.tasks.tasks.insert({
                     'tasklist': '@default',
                     'resource': task
@@ -1417,6 +1450,62 @@
                 await loadTasks();
             } catch (err) {
                 console.error('Error creating task:', err);
+                showAlert('❌ Lỗi tạo task: ' + err.message, 'error');
+            }
+        }
+
+        // ============================================
+        // STANDALONE TASK CREATION (NEW)
+        // ============================================
+        function showCreateTaskForm() {
+            document.getElementById('createTaskForm').style.display = 'block';
+            // Set default due date to today
+            document.getElementById('taskDueDate').value = new Date().toISOString().split('T')[0];
+        }
+
+        function hideCreateTaskForm() {
+            document.getElementById('createTaskForm').style.display = 'none';
+            // Reset form
+            document.getElementById('taskTitle').value = '';
+            document.getElementById('taskDueDate').value = '';
+            document.getElementById('taskNotes').value = '';
+        }
+
+        async function createStandaloneTask() {
+            const title = document.getElementById('taskTitle').value;
+            const dueDate = document.getElementById('taskDueDate').value;
+            const notes = document.getElementById('taskNotes').value;
+
+            if (!title) {
+                showAlert('⚠️ Vui lòng nhập tên task', 'error');
+                return;
+            }
+
+            if (!dueDate) {
+                showAlert('⚠️ Vui lòng chọn ngày hết hạn', 'error');
+                return;
+            }
+
+            try {
+                console.log('[Task] Creating standalone task:', { title, dueDate, notes });
+
+                const task = {
+                    'title': title,
+                    'notes': notes,
+                    'due': new Date(dueDate).toISOString()
+                };
+
+                await gapi.client.tasks.tasks.insert({
+                    'tasklist': '@default',
+                    'resource': task
+                });
+
+                showAlert('✓ Đã tạo task thành công!', 'success');
+                hideCreateTaskForm();
+                await loadTasks();
+            } catch (err) {
+                console.error('Error creating standalone task:', err);
+                showAlert('❌ Lỗi tạo task: ' + err.message, 'error');
             }
         }
 
@@ -1658,6 +1747,9 @@
             }
 
             try {
+                console.log('[Gemini] Sending request to:', CONFIG.GEMINI_API_URL);
+                console.log('[Gemini] Using model: gemini-1.5-flash');
+
                 const response = await fetch(`${CONFIG.GEMINI_API_URL}?key=${CONFIG.GEMINI_API_KEY}`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -1689,25 +1781,40 @@ Trả lời bằng tiếng Việt, ngắn gọn nhưng đầy đủ. Ưu tiên p
                     })
                 });
 
-                // Parse JSON response - QUAN TRỌNG: thiếu dòng này gây crash
-                if (!response.ok) {
-                    const errData = await response.json();
-                    throw new Error(`HTTP ${response.status}: ${errData?.error?.message || response.statusText}`);
+                console.log('[Gemini] Response status:', response.status);
+
+                // Parse JSON response with error handling
+                let data;
+                try {
+                    data = await response.json();
+                    console.log('[Gemini] Response data:', data);
+                } catch (parseErr) {
+                    console.error('[Gemini] JSON parse error:', parseErr);
+                    const textResponse = await response.text();
+                    console.error('[Gemini] Raw response:', textResponse);
+                    throw new Error('Không thể parse response từ API');
                 }
-                const data = await response.json();
+
+                if (!response.ok) {
+                    console.error('[Gemini] API Error:', data.error);
+                    throw new Error(`HTTP ${response.status}: ${data?.error?.message || response.statusText}`);
+                }
 
                 if (data.error) {
+                    console.error('[Gemini] Error in response:', data.error);
                     throw new Error(data.error.message || 'Lỗi API không xác định');
                 }
 
                 if (!data.candidates || data.candidates.length === 0) {
                     if (data.promptFeedback && data.promptFeedback.blockReason) {
+                        console.error('[Gemini] Blocked by safety:', data.promptFeedback);
                         throw new Error('Nội dung bị chặn bởi chính sách an toàn: ' + data.promptFeedback.blockReason);
                     }
                     throw new Error('Không nhận được phản hồi từ AI.');
                 }
 
                 const aiResponse = data.candidates[0].content.parts[0].text;
+                console.log('[Gemini] AI Response received:', aiResponse.substring(0, 100) + '...');
                 addChatMessage('ai', aiResponse);
 
                 // Auto-create event if AI suggests structured format
