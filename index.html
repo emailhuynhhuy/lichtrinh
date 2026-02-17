@@ -993,7 +993,7 @@
 
             // Gemini API
             GEMINI_API_KEY: 'AIzaSyAqp_9ktO7lj84dvkrPHACxjJ0pjTTGdUE',
-            GEMINI_API_URL: 'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent',
+            GEMINI_API_URL: 'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent',
 
             // Scopes
             SCOPES: [
@@ -1157,7 +1157,7 @@
                     'orderBy': 'startTime'
                 });
 
-                const events = response.result.items;
+                const events = response.result.items || [];
                 currentEvents = events;
                 renderCalendarEvents(events);
                 updateDashboard();
@@ -1907,16 +1907,16 @@ Trả lời bằng tiếng Việt, ngắn gọn nhưng đầy đủ. Ưu tiên p
         }
 
         // Override loadCalendarEvents to show skeleton
-        const _originalLoadCalendar = loadCalendarEvents;
+        const _calendarFn = loadCalendarEvents;
         loadCalendarEvents = async function () {
             showLoadingSkeleton('calendarEvents', 'event', 3);
-            return _originalLoadCalendar();
+            return _calendarFn();
         };
 
-        const _originalLoadTasks = loadTasks;
+        const _tasksFn = loadTasks;
         loadTasks = async function () {
             showLoadingSkeleton('tasksList', 'task', 4);
-            return _originalLoadTasks();
+            return _tasksFn();
         };
 
         // ============================================
