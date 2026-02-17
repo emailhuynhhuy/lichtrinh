@@ -993,7 +993,7 @@
 
             // Gemini API
             GEMINI_API_KEY: 'AIzaSyAqp_9ktO7lj84dvkrPHACxjJ0pjTTGdUE',
-            GEMINI_API_URL: 'https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent',
+            GEMINI_API_URL: 'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent',
 
             // Scopes
             SCOPES: [
@@ -1144,9 +1144,8 @@
         // ============================================
         async function loadCalendarEvents() {
             try {
-                // Show events from 7 days ago to ensure recent past events are visible for testing
+                // Load từ đầu ngày hôm nay → hiển thị cả sự kiện sáng nay đã qua
                 const startOfDay = new Date();
-                startOfDay.setDate(startOfDay.getDate() - 7);
                 startOfDay.setHours(0, 0, 0, 0);
 
                 const response = await gapi.client.calendar.events.list({
@@ -1559,12 +1558,13 @@
             const pendingTasks = currentTasks.filter(task => task.status !== 'completed');
             document.getElementById('pendingTasksCount').textContent = pendingTasks.length;
 
-            // Render upcoming events (without overwriting calendar tab)
+            // Render upcoming events - hiển thị tất cả sự kiện từ đầu ngày hôm nay
             const upcomingContainer = document.getElementById('upcomingEvents');
-            const now = new Date();
+            const startOfToday = new Date();
+            startOfToday.setHours(0, 0, 0, 0);
             const upcoming = currentEvents.filter(e => {
-                const end = new Date(e.end.dateTime || e.end.date);
-                return end > now;
+                const start = new Date(e.start.dateTime || e.start.date);
+                return start >= startOfToday;
             }).slice(0, 5);
 
             if (upcoming.length > 0) {
@@ -1688,6 +1688,13 @@ Trả lời bằng tiếng Việt, ngắn gọn nhưng đầy đủ. Ưu tiên p
                         }]
                     })
                 });
+
+                // Parse JSON response - QUAN TRỌNG: thiếu dòng này gây crash
+                if (!response.ok) {
+                    const errData = await response.json();
+                    throw new Error(`HTTP ${response.status}: ${errData?.error?.message || response.statusText}`);
+                }
+                const data = await response.json();
 
                 if (data.error) {
                     throw new Error(data.error.message || 'Lỗi API không xác định');
