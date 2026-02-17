@@ -1144,7 +1144,9 @@
         // ============================================
         async function loadCalendarEvents() {
             try {
+                // Show events from 7 days ago to ensure recent past events are visible for testing
                 const startOfDay = new Date();
+                startOfDay.setDate(startOfDay.getDate() - 7);
                 startOfDay.setHours(0, 0, 0, 0);
 
                 const response = await gapi.client.calendar.events.list({
@@ -1152,7 +1154,7 @@
                     'timeMin': startOfDay.toISOString(),
                     'showDeleted': false,
                     'singleEvents': true,
-                    'maxResults': 50,
+                    'maxResults': 250,
                     'orderBy': 'startTime'
                 });
 
@@ -1358,7 +1360,7 @@
                 const response = await gapi.client.tasks.tasks.list({
                     'tasklist': '@default',
                     'showCompleted': true,
-                    'maxResults': 50
+                    'maxResults': 100
                 });
 
                 const tasks = response.result.items || [];
@@ -1687,7 +1689,17 @@ Trả lời bằng tiếng Việt, ngắn gọn nhưng đầy đủ. Ưu tiên p
                     })
                 });
 
-                const data = await response.json();
+                if (data.error) {
+                    throw new Error(data.error.message || 'Lỗi API không xác định');
+                }
+
+                if (!data.candidates || data.candidates.length === 0) {
+                    if (data.promptFeedback && data.promptFeedback.blockReason) {
+                        throw new Error('Nội dung bị chặn bởi chính sách an toàn: ' + data.promptFeedback.blockReason);
+                    }
+                    throw new Error('Không nhận được phản hồi từ AI.');
+                }
+
                 const aiResponse = data.candidates[0].content.parts[0].text;
                 addChatMessage('ai', aiResponse);
 
