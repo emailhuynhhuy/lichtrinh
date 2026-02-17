@@ -3,7 +3,7 @@
 // Strategy: App Shell caching + Network-first for APIs
 // ============================================
 
-const CACHE_NAME = 'artist-schedule-v1';
+const CACHE_NAME = 'artist-schedule-v2';
 const APP_SHELL_CACHE = [
     '/lichtrinh/',
     '/lichtrinh/index.html',
