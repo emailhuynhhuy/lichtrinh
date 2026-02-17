@@ -1023,7 +1023,7 @@
             API_KEY: 'AIzaSyAPBtaq876_VQo0TL6NVLeo5dp3mevowQw',
 
             // Gemini API
-            GEMINI_API_KEY: 'AIzaSyAqp_9ktO7lj84dvkrPHACxjJ0pjTTGdUE',
+            GEMINI_API_KEY: 'AIzaSyAPBtaq876_VQo0TL6NVLeo5dp3mevowQw',
             // Thử v1 endpoint thay vì v1beta
             GEMINI_API_URL: 'https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent',
 
@@ -1256,6 +1256,19 @@
                 return;
             }
 
+            // Authentication check - prevent cryptic API errors
+            const token = gapi.client.getToken();
+            if (!token) {
+                showAlert('⚠️ Vui lòng đăng nhập trước!', 'error');
+                return;
+            }
+
+            // Network check
+            if (!navigator.onLine) {
+                showAlert('❌ Không có kết nối mạng. Vui lòng kiểm tra internet.', 'error');
+                return;
+            }
+
             // Create datetime
             const startDateTime = new Date(`${date}T${time}`);
             const endDateTime = new Date(startDateTime.getTime() + duration * 60000);
@@ -1326,6 +1339,19 @@
 
         async function deleteCalendarEvent(eventId) {
             if (!confirm('Bạn có chắc muốn xóa sự kiện này?')) return;
+
+            // Authentication check
+            const token = gapi.client.getToken();
+            if (!token) {
+                showAlert('⚠️ Vui lòng đăng nhập trước!', 'error');
+                return;
+            }
+
+            // Network check
+            if (!navigator.onLine) {
+                showAlert('❌ Không có kết nối mạng. Vui lòng kiểm tra internet.', 'error');
+                return;
+            }
 
             try {
                 await gapi.client.calendar.events.delete({
@@ -1487,6 +1513,19 @@
                 return;
             }
 
+            // Authentication check - prevent cryptic API errors
+            const token = gapi.client.getToken();
+            if (!token) {
+                showAlert('⚠️ Vui lòng đăng nhập trước!', 'error');
+                return;
+            }
+
+            // Network check
+            if (!navigator.onLine) {
+                showAlert('❌ Không có kết nối mạng. Vui lòng kiểm tra internet.', 'error');
+                return;
+            }
+
             try {
                 console.log('[Task] Creating standalone task:', { title, dueDate, notes });
 
@@ -1506,11 +1545,35 @@
                 await loadTasks();
             } catch (err) {
                 console.error('Error creating standalone task:', err);
-                showAlert('❌ Lỗi tạo task: ' + err.message, 'error');
+                let errorMsg = '❌ Lỗi tạo task: ';
+
+                if (err.status === 401) {
+                    errorMsg += 'Phiên đăng nhập hết hạn. Vui lòng đăng nhập lại.';
+                    handleSignoutClick();
+                } else if (err.status === 403) {
+                    errorMsg += 'Không có quyền. Kiểm tra Google Tasks API đã được enable trong Google Cloud Console.';
+                } else {
+                    errorMsg += err.message || 'Lỗi không xác định';
+                }
+
+                showAlert(errorMsg, 'error');
             }
         }
 
         async function toggleTaskStatus(taskId, completed) {
+            // Authentication check
+            const token = gapi.client.getToken();
+            if (!token) {
+                showAlert('⚠️ Vui lòng đăng nhập trước!', 'error');
+                return;
+            }
+
+            // Network check
+            if (!navigator.onLine) {
+                showAlert('❌ Không có kết nối mạng. Vui lòng kiểm tra internet.', 'error');
+                return;
+            }
+
             try {
                 const status = completed ? 'completed' : 'needsAction';
 
@@ -1533,6 +1596,19 @@
 
         async function deleteTask(taskId) {
             if (!confirm('Bạn có chắc muốn xóa task này?')) return;
+
+            // Authentication check
+            const token = gapi.client.getToken();
+            if (!token) {
+                showAlert('⚠️ Vui lòng đăng nhập trước!', 'error');
+                return;
+            }
+
+            // Network check
+            if (!navigator.onLine) {
+                showAlert('❌ Không có kết nối mạng. Vui lòng kiểm tra internet.', 'error');
+                return;
+            }
 
             try {
                 await gapi.client.tasks.tasks.delete({
@@ -1743,13 +1819,23 @@
             input.value = '';
 
             if (CONFIG.GEMINI_API_KEY === 'YOUR_GEMINI_API_KEY') {
-                addChatMessage('ai', '⚠️ Vui lòng cấu hình Gemini API Key');
+                addChatMessage('ai', '⚠️ Vui lòng cấu hình Gemini API Key trong code!');
+                return;
+            }
+
+            // Network connectivity check
+            if (!navigator.onLine) {
+                addChatMessage('ai', '❌ Không có kết nối mạng. Vui lòng kiểm tra internet.');
                 return;
             }
 
             try {
                 console.log('[Gemini] Sending request to:', CONFIG.GEMINI_API_URL);
                 console.log('[Gemini] Using model: gemini-1.5-flash');
+
+                // Add timeout to prevent indefinite hanging
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 30000);
 
                 const response = await fetch(`${CONFIG.GEMINI_API_URL}?key=${CONFIG.GEMINI_API_KEY}`, {
                     method: 'POST',
@@ -1779,8 +1865,11 @@ ${message}
 Trả lời bằng tiếng Việt, ngắn gọn nhưng đầy đủ. Ưu tiên phát hiện xung đột và gợi ý thực tế.`
                             }]
                         }]
-                    })
+                    }),
+                    signal: controller.signal
                 });
+
+                clearTimeout(timeoutId);
 
                 console.log('[Gemini] Response status:', response.status);
 
@@ -1826,17 +1915,20 @@ Trả lời bằng tiếng Việt, ngắn gọn nhưng đầy đủ. Ưu tiên p
                 console.error('========== GEMINI ERROR ==========');
                 console.error('Error:', err);
                 console.error('Message:', err.message);
+                console.error('Name:', err.name);
                 console.error('===================================');
 
                 // Hiển thị thông báo lỗi chi tiết hơn cho user
                 let errorMsg = err.message || 'Lỗi không xác định';
 
-                if (errorMsg.includes('Failed to fetch') || errorMsg.includes('NetworkError')) {
-                    errorMsg = '❌ Lỗi mạng: Không thể kết nối đến Google AI. Có thể do CORS hoặc mạng chặn kết nối.';
+                if (err.name === 'AbortError') {
+                    errorMsg = '⏱️ Timeout - Server không phản hồi sau 30 giây. Thử lại sau hoặc kiểm tra kết nối mạng.';
+                } else if (errorMsg.includes('Failed to fetch') || errorMsg.includes('NetworkError')) {
+                    errorMsg = '❌ Lỗi mạng: Không thể kết nối đến Google AI. Có thể do CORS hoặc mạng chặn kết nối.\n\n💡 Thử sử dụng VPN hoặc kiểm tra Google Cloud Console để enable Generative Language API.';
                 } else if (errorMsg.includes('400')) {
                     errorMsg = '❌ Lỗi request (400): Tham số không hợp lệ. Đang thử lại với cấu hình khác...';
                 } else if (errorMsg.includes('401') || errorMsg.includes('403')) {
-                    errorMsg = '❌ Lỗi xác thực (401/403): API Key không hợp lệ hoặc hết hạn.';
+                    errorMsg = '❌ Lỗi xác thực (401/403): API Key không hợp lệ hoặc hết hạn.\n\n💡 Kiểm tra Google Cloud Console để đảm bảo Generative Language API đã được enable.';
                 } else if (errorMsg.includes('500') || errorMsg.includes('502')) {
                     errorMsg = '❌ Lỗi server Google (500/502): Vui lòng thử lại sau.';
                 } else {
