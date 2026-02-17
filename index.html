@@ -1024,7 +1024,8 @@
 
             // Gemini API
             GEMINI_API_KEY: 'AIzaSyAqp_9ktO7lj84dvkrPHACxjJ0pjTTGdUE',
-            GEMINI_API_URL: 'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent',
+            // Thử v1 endpoint thay vì v1beta
+            GEMINI_API_URL: 'https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent',
 
             // Scopes
             SCOPES: [
@@ -1822,8 +1823,27 @@ Trả lời bằng tiếng Việt, ngắn gọn nhưng đầy đủ. Ưu tiên p
                     parseAndCreateEventFromAI(aiResponse);
                 }
             } catch (err) {
-                console.error('Gemini API Error:', err);
-                addChatMessage('ai', '❌ Lỗi kết nối AI: ' + err.message);
+                console.error('========== GEMINI ERROR ==========');
+                console.error('Error:', err);
+                console.error('Message:', err.message);
+                console.error('===================================');
+
+                // Hiển thị thông báo lỗi chi tiết hơn cho user
+                let errorMsg = err.message || 'Lỗi không xác định';
+
+                if (errorMsg.includes('Failed to fetch') || errorMsg.includes('NetworkError')) {
+                    errorMsg = '❌ Lỗi mạng: Không thể kết nối đến Google AI. Có thể do CORS hoặc mạng chặn kết nối.';
+                } else if (errorMsg.includes('400')) {
+                    errorMsg = '❌ Lỗi request (400): Tham số không hợp lệ. Đang thử lại với cấu hình khác...';
+                } else if (errorMsg.includes('401') || errorMsg.includes('403')) {
+                    errorMsg = '❌ Lỗi xác thực (401/403): API Key không hợp lệ hoặc hết hạn.';
+                } else if (errorMsg.includes('500') || errorMsg.includes('502')) {
+                    errorMsg = '❌ Lỗi server Google (500/502): Vui lòng thử lại sau.';
+                } else {
+                    errorMsg = '❌ Lỗi kết nối AI: ' + errorMsg;
+                }
+
+                addChatMessage('ai', errorMsg);
             }
         }
 
@@ -1921,13 +1941,18 @@ Trả lời bằng tiếng Việt, ngắn gọn nhưng đầy đủ. Ưu tiên p
 
         function showAlert(message, type) {
             const alertClass = type === 'success' ? 'alert-success' :
-                type === 'error' ? 'alert-warning' : 'alert-info';
+                type === 'error' ? 'alert-danger' : 'alert-info';
 
             const alert = document.createElement('div');
             alert.className = `alert ${alertClass}`;
             alert.textContent = message;
 
-            document.querySelector('.container').insertBefore(alert, document.querySelector('.container').firstChild);
+            const container = document.querySelector('.container');
+            if (container) {
+                container.insertBefore(alert, container.firstChild);
+            } else {
+                document.body.insertBefore(alert, document.body.firstChild);
+            }
 
             setTimeout(() => alert.remove(), 5000);
         }
