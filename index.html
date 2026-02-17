@@ -858,7 +858,11 @@
 
         function maybeEnableButtons() {
             if (gapiInited && gisInited) {
-                document.getElementById('authSection').style.display = 'block';
+                // Only show login if user is NOT already logged in
+                if (!gapi.client.getToken()) {
+                    document.getElementById('authSection').style.display = 'block';
+                    document.getElementById('mainContent').style.display = 'none';
+                }
             }
         }
 
@@ -871,11 +875,11 @@
                     throw (resp);
                 }
                 accessToken = resp.access_token;
-
-// ✅ THÊM: Set token vào gapi.client
-gapi.client.setToken({
-    access_token: accessToken
-});
+                
+                // Set token for gapi client - CRITICAL!
+                gapi.client.setToken({
+                    access_token: accessToken
+                });
                 
                 // Update UI
                 document.getElementById('authIndicator').classList.add('connected');
