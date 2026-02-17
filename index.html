@@ -1046,8 +1046,31 @@
 
         function maybeEnableButtons() {
             if (gapiInited && gisInited) {
-                // Only show login if user is NOT already logged in
-                if (!gapi.client.getToken()) {
+                // Try to restore saved session first
+                const savedToken = sessionStorage.getItem('gapi_token');
+                const savedExpiry = sessionStorage.getItem('gapi_token_expiry');
+
+                if (savedToken && savedExpiry && Date.now() < parseInt(savedExpiry)) {
+                    // Restore token from sessionStorage
+                    const tokenObj = JSON.parse(savedToken);
+                    gapi.client.setToken(tokenObj);
+                    accessToken = tokenObj.access_token;
+
+                    // Show main content
+                    document.getElementById('authIndicator').classList.add('connected');
+                    document.getElementById('authStatus').textContent = 'Đã kết nối với Google';
+                    document.getElementById('signoutBtn').style.display = 'inline-flex';
+                    document.getElementById('authSection').style.display = 'none';
+                    document.getElementById('mainContent').style.display = 'block';
+
+                    // Load data
+                    syncAllData();
+                    startAutoRefresh();
+                    console.log('[Auth] Session restored from sessionStorage');
+                } else {
+                    // No valid token - show login
+                    sessionStorage.removeItem('gapi_token');
+                    sessionStorage.removeItem('gapi_token_expiry');
                     document.getElementById('authSection').style.display = 'block';
                     document.getElementById('mainContent').style.display = 'none';
                 }
@@ -1060,14 +1083,22 @@
         function handleAuthClick() {
             tokenClient.callback = async (resp) => {
                 if (resp.error !== undefined) {
-                    throw (resp);
+                    console.error('[Auth] Token error:', resp.error);
+                    showAlert('❌ Lỗi đăng nhập: ' + resp.error, 'error');
+                    return;
                 }
                 accessToken = resp.access_token;
 
                 // Set token for gapi client - CRITICAL!
-                gapi.client.setToken({
-                    access_token: accessToken
-                });
+                const tokenObj = { access_token: accessToken };
+                gapi.client.setToken(tokenObj);
+
+                // Save token to sessionStorage (survives F5, clears on tab close)
+                sessionStorage.setItem('gapi_token', JSON.stringify(tokenObj));
+                // Token expires in ~3600s, save expiry time
+                const expiresIn = resp.expires_in || 3600;
+                sessionStorage.setItem('gapi_token_expiry', String(Date.now() + expiresIn * 1000));
+                console.log('[Auth] Token saved, expires in', expiresIn, 'seconds');
 
                 // Update UI
                 document.getElementById('authIndicator').classList.add('connected');
@@ -1093,6 +1124,11 @@
             if (token !== null) {
                 google.accounts.oauth2.revoke(token.access_token);
                 gapi.client.setToken('');
+
+                // Clear saved session
+                sessionStorage.removeItem('gapi_token');
+                sessionStorage.removeItem('gapi_token_expiry');
+                if (autoRefreshInterval) clearInterval(autoRefreshInterval);
 
                 // Update UI
                 document.getElementById('authIndicator').classList.remove('connected');
@@ -1561,13 +1597,35 @@
             }
         }
 
-        // Auto-refresh: sync data every 5 minutes
+        // Auto-refresh: sync data every 5 minutes + token expiry check
         let autoRefreshInterval = null;
         function startAutoRefresh() {
             if (autoRefreshInterval) clearInterval(autoRefreshInterval);
             autoRefreshInterval = setInterval(() => {
-                if (gapi.client.getToken()) {
-                    console.log('Auto-refresh: syncing data...');
+                const token = gapi.client.getToken();
+                const expiry = sessionStorage.getItem('gapi_token_expiry');
+
+                // Check if token is expired or about to expire (5 min buffer)
+                if (expiry && Date.now() > parseInt(expiry) - 5 * 60 * 1000) {
+                    console.log('[Auth] Token expired or expiring soon, refreshing...');
+                    // Silent re-authenticate
+                    tokenClient.callback = async (resp) => {
+                        if (resp.error) {
+                            console.error('[Auth] Silent refresh failed:', resp.error);
+                            return;
+                        }
+                        accessToken = resp.access_token;
+                        const tokenObj = { access_token: accessToken };
+                        gapi.client.setToken(tokenObj);
+                        sessionStorage.setItem('gapi_token', JSON.stringify(tokenObj));
+                        const expiresIn = resp.expires_in || 3600;
+                        sessionStorage.setItem('gapi_token_expiry', String(Date.now() + expiresIn * 1000));
+                        console.log('[Auth] Token silently refreshed, expires in', expiresIn, 's');
+                        await syncAllData();
+                    };
+                    tokenClient.requestAccessToken({ prompt: '' });
+                } else if (token) {
+                    console.log('[Auto-refresh] Syncing data...');
                     syncAllData();
                 }
             }, 5 * 60 * 1000);
