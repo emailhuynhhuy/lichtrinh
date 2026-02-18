@@ -1,115 +1,49 @@
-// ============================================
-// SERVICE WORKER - Artist Schedule Manager Pro
-// Strategy: App Shell caching + Network-first for APIs
-// ============================================
-
-const CACHE_NAME = 'artist-schedule-v2';
-const APP_SHELL_CACHE = [
-    '/lichtrinh/',
-    '/lichtrinh/index.html',
-    '/lichtrinh/manifest.json',
+// Service Worker for Artist Schedule Pro PWA
+const CACHE_NAME = 'artist-schedule-pro-v1';
+const urlsToCache = [
+    '/',
+    '/index.html',
+    '/manifest.json',
+    '/icon-192.svg',
+    '/icon-512.svg'
 ];
 
-const FONT_CACHE_NAME = 'fonts-v1';
-
-// ============================================
-// INSTALL - Cache App Shell
-// ============================================
-self.addEventListener('install', (event) => {
-    console.log('[SW] Installing Service Worker...');
+// Install event
+self.addEventListener('install', event => {
     event.waitUntil(
         caches.open(CACHE_NAME)
-            .then((cache) => {
-                console.log('[SW] Caching App Shell');
-                return cache.addAll(APP_SHELL_CACHE);
-            })
-            .catch((err) => {
-                console.log('[SW] Cache failed (normal in dev):', err);
+            .then(cache => {
+                console.log('Opened cache');
+                return cache.addAll(urlsToCache);
             })
     );
-    // Activate immediately
-    self.skipWaiting();
 });
 
-// ============================================
-// ACTIVATE - Clean old caches
-// ============================================
-self.addEventListener('activate', (event) => {
-    console.log('[SW] Activating Service Worker...');
+// Fetch event
+self.addEventListener('fetch', event => {
+    event.respondWith(
+        caches.match(event.request)
+            .then(response => {
+                // Return cached version or fetch from network
+                if (response) {
+                    return response;
+                }
+                return fetch(event.request);
+            })
+    );
+});
+
+// Activate event - clean up old caches
+self.addEventListener('activate', event => {
     event.waitUntil(
-        caches.keys().then((cacheNames) => {
+        caches.keys().then(cacheNames => {
             return Promise.all(
-                cacheNames
-                    .filter((name) => name !== CACHE_NAME && name !== FONT_CACHE_NAME)
-                    .map((name) => {
-                        console.log('[SW] Deleting old cache:', name);
-                        return caches.delete(name);
-                    })
+                cacheNames.map(cacheName => {
+                    if (cacheName !== CACHE_NAME) {
+                        return caches.delete(cacheName);
+                    }
+                })
             );
         })
-    );
-    // Take control of all pages immediately
-    self.clients.claim();
-});
-
-// ============================================
-// FETCH - Smart caching strategy
-// ============================================
-self.addEventListener('fetch', (event) => {
-    const url = new URL(event.request.url);
-
-    // Skip non-GET requests
-    if (event.request.method !== 'GET') return;
-
-    // Skip Google API calls - always network
-    if (url.hostname.includes('googleapis.com') ||
-        url.hostname.includes('accounts.google.com') ||
-        url.hostname.includes('generativelanguage.googleapis.com')) {
-        return;
-    }
-
-    // Google Fonts - Cache first (fonts rarely change)
-    if (url.hostname === 'fonts.googleapis.com' || url.hostname === 'fonts.gstatic.com') {
-        event.respondWith(
-            caches.open(FONT_CACHE_NAME).then((cache) => {
-                return cache.match(event.request).then((cachedResponse) => {
-                    if (cachedResponse) {
-                        return cachedResponse;
-                    }
-                    return fetch(event.request).then((networkResponse) => {
-                        cache.put(event.request, networkResponse.clone());
-                        return networkResponse;
-                    });
-                });
-            })
-        );
-        return;
-    }
-
-    // App Shell - Network first, fallback to cache
-    event.respondWith(
-        fetch(event.request)
-            .then((networkResponse) => {
-                // Cache successful responses
-                if (networkResponse && networkResponse.status === 200) {
-                    const responseToCache = networkResponse.clone();
-                    caches.open(CACHE_NAME).then((cache) => {
-                        cache.put(event.request, responseToCache);
-                    });
-                }
-                return networkResponse;
-            })
-            .catch(() => {
-                // Offline - serve from cache
-                return caches.match(event.request).then((cachedResponse) => {
-                    if (cachedResponse) {
-                        return cachedResponse;
-                    }
-                    // If the request is for a page, return the cached index
-                    if (event.request.mode === 'navigate') {
-                        return caches.match('/lichtrinh/index.html');
-                    }
-                });
-            })
     );
 });
