@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+L<!DOCTYPE html>
 <html class="dark" lang="vi">
 
 <head>
@@ -2432,9 +2432,17 @@
         }
 
         function gisLoaded() {
+            // Dynamically determine redirect URI based on current location
+            const currentOrigin = window.location.origin;
+            const currentPath = window.location.pathname.replace(/\/$/, '');
+            const redirectUri = currentOrigin + currentPath;
+
+            console.log('[Auth] Using redirect_uri:', redirectUri);
+
             tokenClient = google.accounts.oauth2.initTokenClient({
                 client_id: CONFIG.CLIENT_ID,
                 scope: CONFIG.SCOPES,
+                redirect_uri: redirectUri,
                 callback: '',
             });
             gisInited = true;
