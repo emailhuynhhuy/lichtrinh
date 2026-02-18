@@ -2432,17 +2432,12 @@
         }
 
         function gisLoaded() {
-            // Dynamically determine redirect URI based on current location
-            const currentOrigin = window.location.origin;
-            const currentPath = window.location.pathname.replace(/\/$/, '');
-            const redirectUri = currentOrigin + currentPath;
-
-            console.log('[Auth] Using redirect_uri:', redirectUri);
+            // For popup OAuth flow, don't specify redirect_uri - let Google handle it
+            // This avoids mismatch errors between configured and actual redirect URIs
 
             tokenClient = google.accounts.oauth2.initTokenClient({
                 client_id: CONFIG.CLIENT_ID,
                 scope: CONFIG.SCOPES,
-                redirect_uri: redirectUri,
                 callback: '',
             });
             gisInited = true;
