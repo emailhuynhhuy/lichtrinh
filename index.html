@@ -7,6 +7,7 @@
     <meta name="description"
         content="Ứng dụng quản lý lịch trình nghệ sĩ chuyên nghiệp với Google Calendar, Tasks & AI">
     <meta name="theme-color" content="#0d59f2">
+    <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="apple-mobile-web-app-title" content="Artist Schedule Pro">
@@ -2366,7 +2367,9 @@
         // ============================================
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
-                navigator.serviceWorker.register('/sw.js')
+                // Register service worker with relative path
+                const swPath = window.location.pathname.replace(/\/[^\/]*$/, '/sw.js');
+                navigator.serviceWorker.register(swPath)
                     .then(reg => console.log('SW registered:', reg.scope))
                     .catch(err => console.log('SW registration failed:', err));
             });
