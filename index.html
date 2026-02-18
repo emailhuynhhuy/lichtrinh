@@ -2355,8 +2355,7 @@
     <div class="alert-container" id="alertContainer"></div>
 
     <!-- Google APIs -->
-    <script src="https://accounts.google.com/gsi/client" onload="gisLoaded()" async defer></script>
-    <script src="https://apis.google.com/js/api.js" onload="gapiLoaded()" async defer></script>
+
 
     <!-- ============================================
          JAVASCRIPT LOGIC
@@ -3317,6 +3316,11 @@ Thông tin lịch trình hiện tại:
             updateCurrentDate();
         });
     </script>
+    <!-- Google APIs (Loaded after logic) -->
+    <script src="https://accounts.google.com/gsi/client" async defer
+        onload="if(typeof gisLoaded==='function')gisLoaded()"></script>
+    <script src="https://apis.google.com/js/api.js" async defer
+        onload="if(typeof gapiLoaded==='function')gapiLoaded()"></script>
 </body>
 
 </html>
