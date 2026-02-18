@@ -2383,7 +2383,7 @@
 
             // Gemini API
             GEMINI_API_KEY: 'AIzaSyAqp_9ktO7lj84dvkrPHACxjJ0pjTTGdUE',
-            GEMINI_API_URL: 'https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent',
+            GEMINI_API_URL: 'https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent',
 
             // Scopes
             SCOPES: [
@@ -2599,17 +2599,6 @@
                 return currentEvents;
             } catch (err) {
                 console.error('Calendar API error:', err);
-
-                // Handle 401 error - token expired or invalid
-                if (err.status === 401 || err.error?.code === 401) {
-                    console.log('[Auth] Token expired, clearing session...');
-                    sessionStorage.removeItem('gapi_token');
-                    sessionStorage.removeItem('gapi_token_expiry');
-                    showAlert('🔐 Phiên đăng nhập hết hạn. Vui lòng đăng nhập lại!', 'error');
-                    showAuthSection();
-                    return [];
-                }
-
                 showAlert('❌ Lỗi tải lịch: ' + err.message, 'error');
                 return [];
             }
@@ -2686,16 +2675,6 @@
 
             } catch (err) {
                 console.error('Error creating event:', err);
-
-                // Handle 401 error - token expired
-                if (err.status === 401 || err.error?.code === 401) {
-                    sessionStorage.removeItem('gapi_token');
-                    sessionStorage.removeItem('gapi_token_expiry');
-                    showAlert('🔐 Phiên đăng nhập hết hạn. Vui lòng đăng nhập lại!', 'error');
-                    showAuthSection();
-                    return;
-                }
-
                 showAlert('❌ Lỗi tạo sự kiện: ' + err.message, 'error');
             }
         }
@@ -3139,6 +3118,28 @@
             const loadingId = addChatMessage('ai', '⏳ Đang xử lý...');
 
             try {
+                // First, get available models
+                const modelsResponse = await fetch(
+                    `https://generativelanguage.googleapis.com/v1beta/models?key=${CONFIG.GEMINI_API_KEY}`
+                );
+                const modelsData = await modelsResponse.json();
+
+                console.log('Available models:', modelsData);
+
+                // Find a valid model to use (prefer gemini-1.5-flash or gemini-pro)
+                let modelName = 'gemini-1.5-flash'; // default
+                if (modelsData.models) {
+                    const preferred = modelsData.models.find(m =>
+                        m.name.includes('gemini-1.5-flash') ||
+                        m.name.includes('gemini-pro')
+                    );
+                    if (preferred) {
+                        modelName = preferred.name.replace('models/', '');
+                    }
+                }
+
+                console.log('Using model:', modelName);
+
                 // Build context with calendar info
                 const contextInfo = `
 Thông tin lịch trình hiện tại:
@@ -3150,7 +3151,7 @@ Thông tin lịch trình hiện tại:
                 const fullPrompt = `${contextInfo}\n\nNgười dùng hỏi: ${message}`;
 
                 const response = await fetch(
-                    `${CONFIG.GEMINI_API_URL}?key=${CONFIG.GEMINI_API_KEY}`,
+                    `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${CONFIG.GEMINI_API_KEY}`,
                     {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
