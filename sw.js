@@ -1,11 +1,15 @@
 // Service Worker for Artist Schedule Pro PWA
 const CACHE_NAME = 'artist-schedule-pro-v1';
+
+// Get the base path from the service worker's location
+const BASE_PATH = self.location.pathname.replace(/\/sw\.js$/, '');
+
 const urlsToCache = [
-    '/',
-    '/index.html',
-    '/manifest.json',
-    '/icon-192.svg',
-    '/icon-512.svg'
+    BASE_PATH + '/',
+    BASE_PATH + '/index.html',
+    BASE_PATH + '/manifest.json',
+    BASE_PATH + '/icon-192.svg',
+    BASE_PATH + '/icon-512.svg'
 ];
 
 // Install event
@@ -13,8 +17,11 @@ self.addEventListener('install', event => {
     event.waitUntil(
         caches.open(CACHE_NAME)
             .then(cache => {
-                console.log('Opened cache');
-                return cache.addAll(urlsToCache);
+                console.log('Opened cache at:', BASE_PATH);
+                return cache.addAll(urlsToCache).catch(err => {
+                    console.warn('Cache addAll failed:', err);
+                    // Continue even if some files can't be cached
+                });
             })
     );
 });
