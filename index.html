@@ -2383,7 +2383,7 @@
 
             // Gemini API
             GEMINI_API_KEY: 'AIzaSyAqp_9ktO7lj84dvkrPHACxjJ0pjTTGdUE',
-            GEMINI_API_URL: 'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent',
+            GEMINI_API_URL: 'https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent',
 
             // Scopes
             SCOPES: [
@@ -2598,7 +2598,18 @@
 
                 return currentEvents;
             } catch (err) {
-                console.error('Error loading events:', err);
+                console.error('Calendar API error:', err);
+
+                // Handle 401 error - token expired or invalid
+                if (err.status === 401 || err.error?.code === 401) {
+                    console.log('[Auth] Token expired, clearing session...');
+                    sessionStorage.removeItem('gapi_token');
+                    sessionStorage.removeItem('gapi_token_expiry');
+                    showAlert('🔐 Phiên đăng nhập hết hạn. Vui lòng đăng nhập lại!', 'error');
+                    showAuthSection();
+                    return [];
+                }
+
                 showAlert('❌ Lỗi tải lịch: ' + err.message, 'error');
                 return [];
             }
@@ -2675,6 +2686,16 @@
 
             } catch (err) {
                 console.error('Error creating event:', err);
+
+                // Handle 401 error - token expired
+                if (err.status === 401 || err.error?.code === 401) {
+                    sessionStorage.removeItem('gapi_token');
+                    sessionStorage.removeItem('gapi_token_expiry');
+                    showAlert('🔐 Phiên đăng nhập hết hạn. Vui lòng đăng nhập lại!', 'error');
+                    showAuthSection();
+                    return;
+                }
+
                 showAlert('❌ Lỗi tạo sự kiện: ' + err.message, 'error');
             }
         }
@@ -3154,7 +3175,19 @@ Thông tin lịch trình hiện tại:
             } catch (err) {
                 console.error('AI Error:', err);
                 document.getElementById(loadingId)?.remove();
-                addChatMessage('ai', '❌ Lỗi: ' + err.message);
+
+                let errorMessage = err.message;
+
+                // Check for specific API errors
+                if (err.message.includes('Failed to fetch') || err.message.includes('NetworkError')) {
+                    errorMessage = 'Không thể kết nối API. Kiểm tra kết nối mạng hoặc thử VPN.';
+                } else if (err.message.includes('403') || err.message.includes('Permission denied')) {
+                    errorMessage = 'API key không có quyền. Vui lòng kiểm tra Google Cloud Console.';
+                } else if (err.message.includes('401') || err.message.includes('invalid')) {
+                    errorMessage = 'API key không hợp lệ. Vui lòng kiểm tra API key.';
+                }
+
+                addChatMessage('ai', '❌ Lỗi: ' + errorMessage);
             }
         }
 
