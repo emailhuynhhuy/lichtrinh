@@ -1,18 +1,33 @@
 {
-    "name": "Artist Schedule Manager Pro",
-    "short_name": "Artist Schedule",
-    "description": "Quản lý lịch trình nghệ sĩ với Google Calendar, Tasks & AI Assistant",
-    "start_url": "/lichtrinh/",
+    "name": "Artist Schedule Pro",
+    "short_name": "Artist Pro",
+    "description": "Ứng dụng quản lý lịch trình nghệ sĩ chuyên nghiệp",
+    "start_url": "/",
     "display": "standalone",
-    "background_color": "#1A1A2E",
-    "theme_color": "#1A1A2E",
-    "orientation": "any",
+    "background_color": "#101622",
+    "theme_color": "#0d59f2",
+    "orientation": "portrait-primary",
     "icons": [
         {
-            "src": "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='80' font-size='80'>🎭</text></svg>",
-            "sizes": "any",
+            "src": "icon-192.svg",
+            "sizes": "192x192",
             "type": "image/svg+xml",
-            "purpose": "any"
+            "purpose": "any maskable"
+        },
+        {
+            "src": "icon-512.svg",
+            "sizes": "512x512",
+            "type": "image/svg+xml",
+            "purpose": "any maskable"
         }
-    ]
+    ],
+    "categories": [
+        "productivity",
+        "business",
+        "utilities"
+    ],
+    "lang": "vi",
+    "dir": "ltr",
+    "scope": "/",
+    "prefer_related_applications": false
 }
